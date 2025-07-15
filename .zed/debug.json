@@ -1,0 +1,32 @@
+[
+  {
+    "label": "SwitchTube-Downloader",
+    "adapter": "Delve",
+    "request": "launch",
+    "mode": "debug",
+    "program": "."
+  },
+  {
+    "label": "SwitchTube-Downloader with args",
+    "adapter": "Delve",
+    "request": "launch",
+    "mode": "debug",
+    "program": ".",
+    "args": ["-v test"]
+  },
+  {
+    "label": "Tests",
+    "adapter": "Delve",
+    "request": "launch",
+    "mode": "test",
+    "program": "."
+  },
+  {
+    "label": "Current Test",
+    "adapter": "Delve",
+    "request": "launch",
+    "mode": "test",
+    "program": "$ZED_FILE",
+    "args": ["-test.run", "$ZED_SYMBOL"]
+  }
+]
