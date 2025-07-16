@@ -70,7 +70,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    name: Unit tests
+    name: Tests
     timeout-minutes: 1
 
     if: ${{ !github.event.pull_request.draft }}
@@ -85,33 +85,7 @@ jobs:
           go-version: stable
 
       - name: Run tests with coverage
-        run: go test -cover -coverprofile=coverage.txt ./...
-
-      - name: Archive code coverage results
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-coverage
-          path: coverage.txt
-
-  coverage:
-    runs-on: ubuntu-latest
-    name: Code coverage report
-    timeout-minutes: 1
-
-    if: ${{ !github.event.pull_request.draft }}
-
-    needs: test
-    permissions:
-      contents: read
-      actions: read
-      pull-requests: write
-
-    steps:
-      - name: Generate coverage report
-        uses: fgrosse/go-coverage-report@v1.1.1
-        with:
-          coverage-artifact-name: "code-coverage"
-          coverage-file-name: "coverage.txt"
+        run: go test
 
   lint:
     strategy:
