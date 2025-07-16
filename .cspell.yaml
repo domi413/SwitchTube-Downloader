@@ -13,3 +13,4 @@ dictionaries:
 ignorePaths:
   - ".*"
   - go.sum
+  - go.mod
