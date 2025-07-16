@@ -84,7 +84,7 @@ jobs:
         with:
           go-version: stable
 
-      - name: Run tests with coverage
+      - name: Run tests
         run: go test
 
   lint:
@@ -99,6 +99,8 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+
+    if: ${{ !github.event.pull_request.draft }}
 
     steps:
       - uses: actions/checkout@v4
