@@ -68,16 +68,70 @@ jobs:
           verbose: true
           use_cspell_files: false
 
-  golangci:
+  test:
     runs-on: ubuntu-latest
+    name: Unit tests
+    timeout-minutes: 1
+
+    if: ${{ !github.event.pull_request.draft }}
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
+        with:
+          go-version: stable
 
-      - name: Run golangci-lint
+      - name: Run tests with coverage
+        run: go test -cover -coverprofile=coverage.txt ./...
+
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          path: coverage.txt
+
+  coverage:
+    runs-on: ubuntu-latest
+    name: Code coverage report
+    timeout-minutes: 1
+
+    if: ${{ !github.event.pull_request.draft }}
+
+    needs: test
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+
+    steps:
+      - name: Generate coverage report
+        uses: fgrosse/go-coverage-report@v1
+        with:
+          coverage-artifact-name: "code-coverage"
+          coverage-file-name: "coverage.txt"
+
+  lint:
+    strategy:
+      matrix:
+        go: [stable]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    name: Lint
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 1
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+      - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
-          version: latest
+          version: v2.1
