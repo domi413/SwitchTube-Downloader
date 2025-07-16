@@ -6,3 +6,4 @@
 - [ ] List all videos of a channel, with 1-12; 1,3,5; 1 3 5; videos can be selected, by pressing _enter_ we accept all
   - [ ] With --all or -a we accept all videos
 - [ ] Use keyring for token
+- [ ] Proper cicd
