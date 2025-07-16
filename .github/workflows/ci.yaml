@@ -88,4 +88,5 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
+          problem-matchers: true
           version: v2.1
