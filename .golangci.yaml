@@ -2,3 +2,23 @@ version: "2"
 
 linters:
   default: all
+  disable:
+    - depguard
+    - forbidigo
+    - gochecknoglobals
+    - gochecknoinits
+
+  settings:
+    exhaustruct:
+      exclude:
+        - '.+/cobra\.Command$'
+        - '.+/cobra\.CompletionOptions$'
+
+    gosec:
+      excludes:
+        - G101
+
+  exclusions:
+    paths:
+      - "internal/download/download.go"
+      - "internal/helper/download.go"
