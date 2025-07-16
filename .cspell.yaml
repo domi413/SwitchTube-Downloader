@@ -11,5 +11,5 @@ dictionaries:
   - project-words
 
 ignorePaths:
-  - "build/"
   - ".*"
+  - go.sum

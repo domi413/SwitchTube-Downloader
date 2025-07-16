@@ -17,8 +17,3 @@ linters:
     gosec:
       excludes:
         - G101
-
-  exclusions:
-    paths:
-      - "internal/download/download.go"
-      - "internal/helper/download.go"
