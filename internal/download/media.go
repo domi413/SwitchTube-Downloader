@@ -10,33 +10,9 @@ import (
 	"switch-tube-downloader/internal/token"
 )
 
-// ExtractIDAndType extracts ID and determines if it's a video or channel.
-func ExtractIDAndType(input string) (string, string) {
-	input = strings.TrimSpace(input)
-
-	// If it's a URL, parse it
-	if strings.HasPrefix(input, baseURL) {
-		if strings.Contains(input, "/videos/") {
-			parts := strings.Split(input, "/videos/")
-			if len(parts) > 1 {
-				return strings.Split(parts[1], "/")[0], "video"
-			}
-		}
-		if strings.Contains(input, "/channels/") {
-			parts := strings.Split(input, "/channels/")
-			if len(parts) > 1 {
-				return strings.Split(parts[1], "/")[0], "channel"
-			}
-		}
-	}
-
-	// If it's just an ID, we need to determine type by trying video first
-	return input, "unknown"
-}
-
 // Download downloads a video or channel based on the input.
 func Download(input, customName string) error {
-	id, downloadType := ExtractIDAndType(input)
+	id, downloadType := extractIDAndType(input)
 
 	tokenStr, err := token.Get()
 	if err != nil {
@@ -70,6 +46,30 @@ func Download(input, customName string) error {
 	}
 
 	return nil
+}
+
+// extractIDAndType extracts ID and determines if it's a video or channel.
+func extractIDAndType(input string) (string, string) {
+	input = strings.TrimSpace(input)
+
+	// If it's a URL, parse it
+	if strings.HasPrefix(input, baseURL) {
+		if strings.Contains(input, "/videos/") {
+			parts := strings.Split(input, "/videos/")
+			if len(parts) > 1 {
+				return strings.Split(parts[1], "/")[0], "video"
+			}
+		}
+		if strings.Contains(input, "/channels/") {
+			parts := strings.Split(input, "/channels/")
+			if len(parts) > 1 {
+				return strings.Split(parts[1], "/")[0], "channel"
+			}
+		}
+	}
+
+	// If it's just an ID, we need to determine type by trying video first
+	return input, "unknown"
 }
 
 // downloadChannel downloads all videos from a channel.

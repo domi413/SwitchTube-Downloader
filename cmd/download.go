@@ -11,7 +11,6 @@ import (
 // init initializes the download command and adds it to the root command with its flags.
 func init() {
 	rootCmd.AddCommand(downloadCmd)
-	downloadCmd.Flags().StringP("name", "n", "", "Custom name for the download")
 }
 
 var downloadCmd = &cobra.Command{
