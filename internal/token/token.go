@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os/user"
 
+	"switch-tube-downloader/internal/prompt"
+
 	"github.com/zalando/go-keyring"
 )
 
@@ -52,7 +54,7 @@ func Set() error {
 	if err == nil && existingToken != "" {
 		fmt.Println("Token already exists in keyring")
 
-		if !Confirm("Do you want to replace it?") {
+		if !prompt.Confirm("Do you want to replace it?") {
 			fmt.Println("Operation cancelled")
 
 			return nil
@@ -101,7 +103,7 @@ func create() (string, error) {
 	fmt.Printf("Please visit: %s\n", createAccessTokenAPI)
 	fmt.Printf("Create a new access token and paste it below\n\n")
 
-	token := Input("Enter your access token: ")
+	token := prompt.Input("Enter your access token: ")
 	if token == "" {
 		return "", errTokenEmpty
 	}

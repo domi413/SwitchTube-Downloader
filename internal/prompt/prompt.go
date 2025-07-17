@@ -1,4 +1,6 @@
-package token
+// Package prompt provides utility functions for prompting the user for input
+// from the command line.
+package prompt
 
 import (
 	"bufio"
@@ -18,8 +20,9 @@ func Input(prompt string) string {
 }
 
 // Confirm prompts the user for a yes/no confirmation and returns true for yes.
-func Confirm(prompt string) bool {
-	response := Input(prompt + " (y/N): ")
+func Confirm(format string, args ...any) bool {
+	prompt := fmt.Sprintf(format, args...)
+	response := Input(prompt + " (y/n): ")
 	response = strings.ToLower(strings.TrimSpace(response))
 
 	return response == "y" || response == "yes"

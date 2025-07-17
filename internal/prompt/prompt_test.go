@@ -1,6 +1,7 @@
-package token
+package prompt
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -98,69 +99,40 @@ func TestInput(t *testing.T) {
 func TestConfirm(t *testing.T) {
 	tests := []struct {
 		name   string
-		prompt string
+		format string
+		args   []interface{}
 		input  string
 		want   bool
 	}{
+		{name: "yes lowercase", format: "Continue?", input: "y\n", want: true},
+		{name: "yes uppercase", format: "Continue?", input: "Y\n", want: true},
+		{name: "yes full word lowercase", format: "Continue?", input: "yes\n", want: true},
+		{name: "yes full word uppercase", format: "Continue?", input: "YES\n", want: true},
+		{name: "yes with spaces", format: "Continue?", input: "  y  \n", want: true},
+		{name: "no lowercase", format: "Continue?", input: "n\n", want: false},
+		{name: "no uppercase", format: "Continue?", input: "N\n", want: false},
+		{name: "no full word", format: "Continue?", input: "no\n", want: false},
+		{name: "empty input defaults to no", format: "Continue?", input: "\n", want: false},
+		{name: "invalid input defaults to no", format: "Continue?", input: "💀\n", want: false},
 		{
-			name:   "yes lowercase",
-			prompt: "Continue?",
+			name:   "format with single argument",
+			format: "Delete file %s?",
+			args:   []any{"test.txt"},
 			input:  "y\n",
 			want:   true,
 		},
 		{
-			name:   "yes uppercase",
-			prompt: "Continue?",
-			input:  "Y\n",
-			want:   true,
-		},
-		{
-			name:   "yes full word lowercase",
-			prompt: "Continue?",
-			input:  "yes\n",
-			want:   true,
-		},
-		{
-			name:   "yes full word uppercase",
-			prompt: "Continue?",
-			input:  "YES\n",
-			want:   true,
-		},
-		{
-			name:   "yes with spaces",
-			prompt: "Continue?",
-			input:  "  y  \n",
-			want:   true,
-		},
-		{
-			name:   "no lowercase",
-			prompt: "Continue?",
+			name:   "format with multiple arguments",
+			format: "Delete %d files from %s?",
+			args:   []any{5, "/tmp"},
 			input:  "n\n",
 			want:   false,
 		},
 		{
-			name:   "no uppercase",
-			prompt: "Continue?",
-			input:  "N\n",
-			want:   false,
-		},
-		{
-			name:   "no full word",
-			prompt: "Continue?",
-			input:  "no\n",
-			want:   false,
-		},
-		{
-			name:   "empty input defaults to no",
-			prompt: "Continue?",
-			input:  "\n",
-			want:   false,
-		},
-		{
-			name:   "invalid input defaults to no",
-			prompt: "Continue?",
-			input:  "💀\n",
-			want:   false,
+			name:   "format with no arguments but percent sign",
+			format: "Continue with 100% certainty?",
+			input:  "yes\n",
+			want:   true,
 		},
 	}
 
@@ -191,7 +163,12 @@ func TestConfirm(t *testing.T) {
 			defer func() { os.Stdout = oldStdout }()
 
 			// Test the function
-			result := Confirm(tt.prompt)
+			var result bool
+			if tt.args != nil {
+				result = Confirm(tt.format, tt.args...)
+			} else {
+				result = Confirm("%s", tt.format)
+			}
 
 			// Close writer and read captured output
 			w.Close()
@@ -203,7 +180,15 @@ func TestConfirm(t *testing.T) {
 				t.Errorf("Confirm() = %v, want %v", result, tt.want)
 			}
 
-			expectedPrompt := tt.prompt + " (y/N): "
+			// Build expected prompt
+			var expectedBase string
+			if tt.args != nil {
+				expectedBase = fmt.Sprintf(tt.format, tt.args...)
+			} else {
+				expectedBase = tt.format
+			}
+			expectedPrompt := expectedBase + " (y/n): "
+
 			if !strings.Contains(capturedOutput, expectedPrompt) {
 				t.Errorf(
 					"Confirm() did not print expected prompt. Got: %v, expected to contain: %v",
