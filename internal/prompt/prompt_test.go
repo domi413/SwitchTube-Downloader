@@ -227,7 +227,7 @@ func TestConfirmPromptFormat(t *testing.T) {
 	n, _ := r.Read(output)
 	capturedOutput := string(output[:n])
 
-	expectedPrompt := "Test prompt (y/N): "
+	expectedPrompt := "Test prompt (y/n): "
 	if capturedOutput != expectedPrompt {
 		t.Errorf("Confirm() prompt format = %v, want %v", capturedOutput, expectedPrompt)
 	}
