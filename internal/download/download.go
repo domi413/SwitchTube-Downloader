@@ -10,7 +10,11 @@ import (
 	"time"
 )
 
-const BaseURL = "https://tube.switch.ch"
+const (
+	baseURL    = "https://tube.switch.ch"
+	videoAPI   = "/api/v1/browse/videos/"
+	channelAPI = "/api/v1/browse/channels/"
+)
 
 type Video struct {
 	ID    string  `json:"id"`
@@ -39,7 +43,7 @@ func MakeRequest(url, token string) (*http.Response, error) {
 // DownloadVideo downloads a single video (used by both video and channel downloads).
 func DownloadVideo(videoID, token string, currentItem, totalItems int) error {
 	// Get video info
-	resp, err := MakeRequest(fmt.Sprintf("%s/api/v1/browse/videos/%s", BaseURL, videoID), token)
+	resp, err := MakeRequest(fmt.Sprintf("%s/api/v1/browse/videos/%s", baseURL, videoID), token)
 	if err != nil {
 		return err
 	}
@@ -51,7 +55,7 @@ func DownloadVideo(videoID, token string, currentItem, totalItems int) error {
 	}
 
 	// Get download info
-	resp, err = MakeRequest(fmt.Sprintf("%s/api/v1/browse/videos/%s/video_variants", BaseURL, videoID), token)
+	resp, err = MakeRequest(fmt.Sprintf("%s/api/v1/browse/videos/%s/video_variants", baseURL, videoID), token)
 	if err != nil {
 		return err
 	}
@@ -82,7 +86,7 @@ func DownloadVideo(videoID, token string, currentItem, totalItems int) error {
 
 // downloadFile downloads a file with progress bar.
 func downloadFile(path, filename, token string, currentItem, totalItems int) error {
-	resp, err := MakeRequest(BaseURL+path, token)
+	resp, err := MakeRequest(baseURL+path, token)
 	if err != nil {
 		return err
 	}

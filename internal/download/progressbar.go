@@ -30,6 +30,6 @@ func ShowProgress(written, total int64, filename string, currentItem, totalItems
 	writtenMB := float64(written) / bytesPerMB
 	totalMB := float64(total) / bytesPerMB
 
-	fmt.Printf("\r\x1b[2K[%d/%d] Downloading %s [%s] [%.0fMB/%.0fMB] (%.0f Mb/s)",
+	fmt.Printf("\r[2K[%d/%d] Downloading: %s [%s] [%.0fMB/%.0fMB] (%.0f Mb/s)",
 		currentItem, totalItems, filename, bar, writtenMB, totalMB, speed)
 }

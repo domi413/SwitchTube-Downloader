@@ -15,7 +15,7 @@ func init() {
 }
 
 var downloadCmd = &cobra.Command{
-	Use:   "download <video_url|channel_url|video_id|channel_id>",
+	Use:   "download <id>",
 	Short: "Download a video or channel",
 	Long:  "Download a video or channel. Automatically detects if input is a video or channel.",
 	Args:  cobra.MinimumNArgs(1),

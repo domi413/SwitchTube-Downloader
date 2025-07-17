@@ -74,8 +74,6 @@ func Set() error {
 		return fmt.Errorf("%w: %w", errFailedToStore, err)
 	}
 
-	fmt.Println("Token successfully stored in keyring")
-
 	return nil
 }
 
@@ -94,8 +92,6 @@ func Delete() error {
 
 		return fmt.Errorf("%w: %w", errFailedToDelete, err)
 	}
-
-	fmt.Println("Token deleted successfully")
 
 	return nil
 }

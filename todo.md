@@ -8,3 +8,7 @@
 - [ ] Proper pipeline
   - [ ] Release for all os'es
     - [ ] AUR
+- [ ] Pushing .zed folder?
+  - [] Update debugger settings
+
+- [ ] Fix progressbar minimal width

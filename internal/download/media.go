@@ -15,7 +15,7 @@ func ExtractIDAndType(input string) (string, string) {
 	input = strings.TrimSpace(input)
 
 	// If it's a URL, parse it
-	if strings.HasPrefix(input, BaseURL) {
+	if strings.HasPrefix(input, baseURL) {
 		if strings.Contains(input, "/videos/") {
 			parts := strings.Split(input, "/videos/")
 			if len(parts) > 1 {
@@ -75,7 +75,7 @@ func Download(input, customName string) error {
 // downloadChannel downloads all videos from a channel.
 func downloadChannel(channelID, token, customName string) error {
 	// Get channel videos
-	resp, err := MakeRequest(fmt.Sprintf("%s/api/v1/browse/channels/%s/videos", BaseURL, channelID), token)
+	resp, err := MakeRequest(fmt.Sprintf("%s/api/v1/browse/channels/%s/videos", baseURL, channelID), token)
 	if err != nil {
 		return err
 	}
