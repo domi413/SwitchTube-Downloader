@@ -69,6 +69,7 @@ func Set() error {
 		return fmt.Errorf("%w: %w", errFailedToGetUser, err)
 	}
 
+	// TODO: Inline?
 	err = keyring.Set(serviceName, userName.Username, token)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedToStore, err)
@@ -84,6 +85,7 @@ func Delete() error {
 		return fmt.Errorf("%w: %w", errFailedToGetUser, err)
 	}
 
+	// TODO: Inline?
 	err = keyring.Delete(serviceName, userName.Username)
 	if err != nil {
 		if errors.Is(err, keyring.ErrNotFound) {

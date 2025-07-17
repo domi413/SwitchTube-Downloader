@@ -8,25 +8,37 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// init initializes the download command and adds it to the root command with its flags.
+// init initializes the download command and adds it to the root command with
+// its flags.
 func init() {
 	rootCmd.AddCommand(downloadCmd)
+	downloadCmd.Flags().BoolP("force", "f", false, "Force overwrite if file already exist")
+	downloadCmd.Flags().BoolP("all", "a", false, "Download the whole content of a channel")
 }
 
 var downloadCmd = &cobra.Command{
 	Use:   "download <id>",
 	Short: "Download a video or channel",
 	Long:  "Download a video or channel. Automatically detects if input is a video or channel.",
-	Args:  cobra.MinimumNArgs(1),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		name, err := cmd.Flags().GetString("name")
+		id := args[0]
+
+		force, err := cmd.Flags().GetBool("force")
 		if err != nil {
-			fmt.Printf("Error getting name flag: %v\n", err)
+			fmt.Printf("Error getting force flag: %v", err)
 
 			return
 		}
 
-		err = media.Download(args[0], name)
+		all, err := cmd.Flags().GetBool("all")
+		if err != nil {
+			fmt.Printf("Error getting all flag: %v", err)
+
+			return
+		}
+
+		err = media.Download(id, force, all)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 
