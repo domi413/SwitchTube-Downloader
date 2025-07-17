@@ -1,5 +1,5 @@
-// Package token provides functionality for managing access tokens used to
-// authenticate with the SwitchTube API.
+// Package token provides functionality for managing access tokens to
+// authenticate with SwitchTube
 package token
 
 import (
@@ -7,25 +7,23 @@ import (
 	"fmt"
 	"os/user"
 
-	prompt "switch-tube-downloader/internal/helper"
-
 	"github.com/zalando/go-keyring"
 )
 
 const (
-	serviceName          = "SwitchTube Downloader"
+	serviceName          = "SwitchTube"
 	createAccessTokenAPI = "https://tube.switch.ch/access_tokens"
 )
 
 var (
+	errTokenEmpty         = errors.New("token cannot be empty")
+	errNoTokenFoundDelete = errors.New("no token found in keyring")
 	errFailedToGetUser    = errors.New("failed to get current user")
-	errNoTokenFound       = errors.New("no token found in keyring - run 'token set' first")
-	errFailedToRetrieve   = errors.New("failed to retrieve token from keyring")
 	errUnableToCreate     = errors.New("unable to create access token")
 	errFailedToStore      = errors.New("failed to store token in keyring")
-	errTokenEmpty         = errors.New("token cannot be empty")
 	errFailedToDelete     = errors.New("failed to delete token from keyring")
-	errNoTokenFoundDelete = errors.New("no token found in keyring")
+	errFailedToRetrieve   = errors.New("failed to retrieve token from keyring")
+	errNoTokenFound       = errors.New("no token found in keyring - run 'token set' first")
 )
 
 // Get retrieves the access token from the system keyring.
@@ -54,7 +52,7 @@ func Set() error {
 	if err == nil && existingToken != "" {
 		fmt.Println("Token already exists in keyring")
 
-		if !prompt.Confirm("Do you want to replace it?") {
+		if !Confirm("Do you want to replace it?") {
 			fmt.Println("Operation cancelled")
 
 			return nil
@@ -81,19 +79,6 @@ func Set() error {
 	return nil
 }
 
-// create prompts the user to visit the access token creation URL and enter a new token.
-func create() (string, error) {
-	fmt.Printf("Please visit: %s\n", createAccessTokenAPI)
-	fmt.Printf("Create a new access token and paste it below\n\n")
-
-	token := prompt.Input("Enter your access token: ")
-	if token == "" {
-		return "", errTokenEmpty
-	}
-
-	return token, nil
-}
-
 // Delete removes the access token from the system keyring.
 func Delete() error {
 	userName, err := user.Current()
@@ -113,4 +98,17 @@ func Delete() error {
 	fmt.Println("Token deleted successfully")
 
 	return nil
+}
+
+// create prompts the user to visit the access token creation URL and enter a new token.
+func create() (string, error) {
+	fmt.Printf("Please visit: %s\n", createAccessTokenAPI)
+	fmt.Printf("Create a new access token and paste it below\n\n")
+
+	token := Input("Enter your access token: ")
+	if token == "" {
+		return "", errTokenEmpty
+	}
+
+	return token, nil
 }

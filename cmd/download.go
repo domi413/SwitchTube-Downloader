@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"switch-tube-downloader/internal/download"
+	media "switch-tube-downloader/internal/download"
 
 	"github.com/spf13/cobra"
 )
@@ -27,7 +27,7 @@ var downloadCmd = &cobra.Command{
 			return
 		}
 
-		err = download.Download(args[0], name)
+		err = media.Download(args[0], name)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 

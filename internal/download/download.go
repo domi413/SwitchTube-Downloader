@@ -1,124 +1,123 @@
-// Package download handles the downloading of videos and channels from SwitchTube.
-package download
+package media
 
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
-
-	"switch-tube-downloader/internal/helper"
-	"switch-tube-downloader/internal/token"
+	"time"
 )
 
-// ExtractIDAndType extracts ID and determines if it's a video or channel.
-func ExtractIDAndType(input string) (string, string) {
-	input = strings.TrimSpace(input)
+const BaseURL = "https://tube.switch.ch"
 
-	// If it's a URL, parse it
-	if strings.HasPrefix(input, helper.BaseURL) {
-		if strings.Contains(input, "/videos/") {
-			parts := strings.Split(input, "/videos/")
-			if len(parts) > 1 {
-				return strings.Split(parts[1], "/")[0], "video"
-			}
-		}
-		if strings.Contains(input, "/channels/") {
-			parts := strings.Split(input, "/channels/")
-			if len(parts) > 1 {
-				return strings.Split(parts[1], "/")[0], "channel"
-			}
-		}
-	}
-
-	// If it's just an ID, we need to determine type by trying video first
-	return input, "unknown"
+type Video struct {
+	ID    string  `json:"id"`
+	Title *string `json:"title"`
 }
 
-// Download downloads a video or channel based on the input.
-func Download(input, customName string) error {
-	id, downloadType := ExtractIDAndType(input)
+// String returns the string representation of a Video, preferring the title if available, otherwise the ID.
+func (v Video) String() string {
+	if v.Title != nil {
+		return *v.Title
+	}
+	return v.ID
+}
 
-	tokenStr, err := token.Get()
+// MakeRequest makes an authenticated HTTP request.
+func MakeRequest(url, token string) (*http.Response, error) {
+	client := &http.Client{Timeout: 30 * time.Second}
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return fmt.Errorf("failed to get token: %w", err)
+		return nil, err
 	}
-
-	// Try as video first if type is unknown
-	if downloadType == "unknown" {
-		if err := helper.DownloadVideo(id, tokenStr, 1, 1); err == nil {
-			fmt.Printf("\n✅ Successfully downloaded video: %s\n", id)
-			return nil
-		}
-		// If video fails, try as channel
-		downloadType = "channel"
-	}
-
-	switch downloadType {
-	case "video":
-		if err := helper.DownloadVideo(id, tokenStr, 1, 1); err != nil {
-			return fmt.Errorf("failed to download video: %w", err)
-		}
-		fmt.Printf("\n✅ Successfully downloaded video\n")
-
-	case "channel":
-		if err := downloadChannel(id, tokenStr, customName); err != nil {
-			return fmt.Errorf("failed to download channel: %w", err)
-		}
-
-	default:
-		return fmt.Errorf("could not determine if input is video or channel")
-	}
-
-	return nil
+	req.Header.Set("Authorization", "Token "+token)
+	return client.Do(req)
 }
 
-// downloadChannel downloads all videos from a channel.
-func downloadChannel(channelID, token, customName string) error {
-	// Get channel videos
-	resp, err := helper.MakeRequest(fmt.Sprintf("%s/api/v1/browse/channels/%s/videos", helper.BaseURL, channelID), token)
+// DownloadVideo downloads a single video (used by both video and channel downloads).
+func DownloadVideo(videoID, token string, currentItem, totalItems int) error {
+	// Get video info
+	resp, err := MakeRequest(fmt.Sprintf("%s/api/v1/browse/videos/%s", BaseURL, videoID), token)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	var video Video
+	if err := json.NewDecoder(resp.Body).Decode(&video); err != nil {
+		return err
+	}
+
+	// Get download info
+	resp, err = MakeRequest(fmt.Sprintf("%s/api/v1/browse/videos/%s/video_variants", BaseURL, videoID), token)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	var variants []struct {
+		Path      string `json:"path"`
+		MediaType string `json:"media_type"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&variants); err != nil {
+		return err
+	}
+	if len(variants) == 0 {
+		return fmt.Errorf("no variants found")
+	}
+
+	// Download file
+	parts := strings.Split(variants[0].MediaType, "/")
+	if len(parts) < 2 {
+		return fmt.Errorf("invalid media type: %s", variants[0].MediaType)
+	}
+	extension := parts[1]
+	filename := fmt.Sprintf("%s.%s", video.String(), extension)
+	filename = strings.ReplaceAll(filename, "/", " - ")
+
+	return downloadFile(variants[0].Path, filename, token, currentItem, totalItems)
+}
+
+// downloadFile downloads a file with progress bar.
+func downloadFile(path, filename, token string, currentItem, totalItems int) error {
+	resp, err := MakeRequest(BaseURL+path, token)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("HTTP %d", resp.StatusCode)
 	}
 
-	var videos []helper.Video
-	if err := json.NewDecoder(resp.Body).Decode(&videos); err != nil {
+	out, err := os.Create(filename)
+	if err != nil {
 		return err
 	}
+	defer out.Close()
 
-	fmt.Printf("📹 Found %d videos in channel\n", len(videos))
+	var written int64
+	startTime := time.Now()
 
-	// Create folder
-	folderName := customName
-	if folderName == "" {
-		folderName = fmt.Sprintf("channel_%s", channelID)
-	}
-	folderName = strings.ReplaceAll(folderName, "/", " - ")
-
-	if err := os.MkdirAll(folderName, 0o755); err != nil {
-		return err
-	}
-
-	originalDir, _ := os.Getwd()
-	os.Chdir(folderName)
-	defer os.Chdir(originalDir)
-
-	fmt.Printf("📁 Downloading to folder: %s\n", folderName)
-
-	// Download each video
-	var failed []string
-	for i, video := range videos {
-		if err := helper.DownloadVideo(video.ID, token, i+1, len(videos)); err != nil {
-			fmt.Printf("\n❌ Failed: %s\n", video.String())
-			failed = append(failed, video.String())
+	for {
+		buffer := make([]byte, 32*1024)
+		n, err := resp.Body.Read(buffer)
+		if n > 0 {
+			if _, err := out.Write(buffer[:n]); err != nil {
+				return err
+			}
+			written += int64(n)
+			ShowProgress(written, resp.ContentLength, filename, currentItem, totalItems, startTime)
+		}
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
 		}
 	}
 
-	fmt.Printf("\n✅ Download complete! %d/%d videos\n", len(videos)-len(failed), len(videos))
 	return nil
 }

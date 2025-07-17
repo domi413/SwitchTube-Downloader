@@ -1,5 +1,4 @@
-// Package helper provides utility functions for user interaction and input handling.
-package helper
+package token
 
 import (
 	"bufio"
