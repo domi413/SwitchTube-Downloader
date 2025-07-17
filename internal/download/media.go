@@ -29,7 +29,7 @@ const (
 	headerAuthorization = "Authorization"
 
 	// File and directory permissions.
-	dirPermissions = 0o644
+	dirPermissions = 0o744
 
 	// Magic numbers.
 	minMediaTypeParts = 2

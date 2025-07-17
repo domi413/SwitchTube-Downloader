@@ -11,3 +11,4 @@
   - [ ] Release for all os'es
     - [ ] AUR
 - [ ] use better progressbar
+- [ ] double overwrite ui bug
