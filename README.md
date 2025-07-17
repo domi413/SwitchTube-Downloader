@@ -48,7 +48,7 @@ While other tools exist for downloading SwitchTube content, **SwitchTube-Downloa
 | **Encrypted Access Token**     | Secure encryption ✅                                                      | No encryption                                             | Not supported                                                  |
 | **Intuitive Downloads**        | One simple command ✅                                                     | Separate commands for videos and channels                 | Complex CLI usage                                              |
 | **Video download**             | Supported ✅                                                              | Supported ✅                                              | Not supported                                                  |
-| **Channel download**           | Supported ✅                                                              | Supported ✅                                              | Not supported                                                  |
+| **Channel download**           | Supported ✅                                                              | Supported ✅                                              | Supported ✅                                                   |
 | **Select videos of a channel** | Supported ✅                                                              | Supported ✅                                              | Not supported                                                  |
 
 ## Testing the SwitchTube API
