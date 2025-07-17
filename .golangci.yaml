@@ -7,13 +7,25 @@ linters:
     - forbidigo
     - gochecknoglobals
     - gochecknoinits
+    - wsl
+
+  exclusions:
+    paths:
+      - internal/download/download.go
+      - _test.go
 
   settings:
     exhaustruct:
       exclude:
         - '.+/cobra\.Command$'
         - '.+/cobra\.CompletionOptions$'
-
     gosec:
       excludes:
         - G101
+    varnamelen:
+      min-name-length: 1
+
+formatters:
+  enable:
+    - gofmt
+    - golines

@@ -2,6 +2,7 @@
 package media
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -16,49 +17,62 @@ const (
 	channelPrefix = "channels/"
 )
 
-type MediaType int
+type mediaType int
 
 const (
-	unknown MediaType = iota
+	unknown mediaType = iota
 	video
 	channel
 )
 
-// Download downloads a video or a channel
+var (
+	errInvalidURL              = errors.New("invalid url")
+	errFailedToGetToken        = errors.New("failed to get token")
+	errFailedToExtractType     = errors.New("failed to extract type")
+	errFailedToDownloadVideo   = errors.New("failed to download video")
+	errFailedToDownloadChannel = errors.New("failed to download channel")
+	errCouldNotDetermineType   = errors.New("could not determine if channel or video")
+)
+
+// Download downloads a video or a channel.
 func Download(media string, force bool, all bool) error {
 	id, downloadType, err := extractIDAndType(media)
 	if err != nil {
-		return fmt.Errorf("failed to extract type: %w", err)
+		return fmt.Errorf("%w: %w", errFailedToExtractType, err)
 	}
 
 	token, err := token.Get()
 	if err != nil {
-		return fmt.Errorf("failed to get token: %w", err)
+		return fmt.Errorf("%w: %w", errFailedToGetToken, err)
 	}
 
 	switch downloadType {
 	case video:
-		if err := downloadVideo(id, token, 1, 1, force); err != nil {
-			return fmt.Errorf("failed to download video: %w", err)
+		err = downloadVideo(id, token, 1, 1, force)
+		if err != nil {
+			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 		}
 	case unknown:
-		if err := downloadVideo(id, token, 1, 1, force); err == nil {
+		err = downloadVideo(id, token, 1, 1, force)
+		if err == nil {
 			return nil
 		}
+
 		fallthrough
 	case channel:
-		if err := downloadChannel(id, token, force, all); err != nil {
-			return fmt.Errorf("failed to download channel: %w", err)
+		err = downloadChannel(id, token, force, all)
+		if err != nil {
+			return fmt.Errorf("%w: %w", errFailedToDownloadChannel, err)
 		}
 	default:
-		return fmt.Errorf("could not determine if channel or video")
+		return errCouldNotDetermineType
 	}
 
 	return nil
 }
 
 // ExtractIDAndType extracts the id and determines if it's a video or channel.
-func extractIDAndType(input string) (string, MediaType, error) {
+func extractIDAndType(input string) (string, mediaType, error) {
 	input = strings.TrimSpace(input)
 
 	// If input doesn't start with baseURL, return as unknown ExtractIDAndType
@@ -74,6 +88,6 @@ func extractIDAndType(input string) (string, MediaType, error) {
 	case strings.HasPrefix(id, channelPrefix):
 		return strings.TrimPrefix(id, channelPrefix), channel, nil
 	default:
-		return id, unknown, fmt.Errorf("invalid url")
+		return id, unknown, errInvalidURL
 	}
 }

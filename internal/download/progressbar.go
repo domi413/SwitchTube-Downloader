@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	// Progress bar display constants
+	// Progress bar display constants.
 	percentageMultiplier = 100
 	progressBarLength    = 50
 	bytesPerKB           = 1024
@@ -18,7 +18,7 @@ const (
 )
 
 const (
-	// Terminal display constants
+	// Terminal display constants.
 	defaultTerminalWidth   = 80
 	reservedSpace          = 40
 	terminalWidthPadding   = 30
@@ -30,12 +30,17 @@ const (
 )
 
 const (
-	// ANSI escape codes
+	// ANSI escape codes.
 	clearLine = "\r\x1b[2K"
 )
 
 // ShowProgress displays a progress bar for downloading.
-func ShowProgress(written, total int64, filename string, currentItem, totalItems int, startTime time.Time) {
+func ShowProgress(
+	written, total int64,
+	filename string,
+	currentItem, totalItems int,
+	startTime time.Time,
+) {
 	termWidth := getTerminalWidth()
 	percent := float64(written) / float64(total) * percentageMultiplier
 	barLength := calculateBarLength(termWidth)
@@ -44,7 +49,15 @@ func ShowProgress(written, total int64, filename string, currentItem, totalItems
 	writtenMB, totalMB := formatFileSize(written, total)
 	truncatedFilename := truncateFilename(filename, termWidth, barLength)
 
-	progress := formatProgressMessage(currentItem, totalItems, truncatedFilename, bar, writtenMB, totalMB, speed)
+	progress := formatProgressMessage(
+		currentItem,
+		totalItems,
+		truncatedFilename,
+		bar,
+		writtenMB,
+		totalMB,
+		speed,
+	)
 	progress = truncateProgressMessage(progress, termWidth)
 
 	fmt.Printf("%s%s", clearLine, progress)
@@ -53,10 +66,12 @@ func ShowProgress(written, total int64, filename string, currentItem, totalItems
 // getTerminalWidth returns the current terminal width or default if unavailable.
 func getTerminalWidth() int {
 	if term.IsTerminal(stdinFileDescriptor) {
-		if width, _, err := term.GetSize(stdinFileDescriptor); err == nil {
+		width, _, err := term.GetSize(stdinFileDescriptor)
+		if err == nil {
 			return width
 		}
 	}
+
 	return defaultTerminalWidth
 }
 
@@ -65,12 +80,14 @@ func calculateBarLength(termWidth int) int {
 	barLength := progressBarLength
 	barLength = min(barLength, termWidth-terminalWidthPadding)
 	barLength = max(barLength, minBarLength)
+
 	return barLength
 }
 
 // renderProgressBar creates the visual progress bar string.
 func renderProgressBar(percent float64, barLength int) string {
 	filled := int(float64(barLength) * percent / percentageMultiplier)
+
 	return strings.Repeat("#", filled) + strings.Repeat("-", barLength-filled)
 }
 
@@ -88,6 +105,7 @@ func calculateDownloadSpeed(written int64, startTime time.Time) float64 {
 func formatFileSize(written, total int64) (float64, float64) {
 	writtenMB := float64(written) / bytesPerMB
 	totalMB := float64(total) / bytesPerMB
+
 	return writtenMB, totalMB
 }
 
@@ -104,15 +122,28 @@ func truncateFilename(filename string, termWidth, barLength int) string {
 }
 
 // formatProgressMessage creates the complete progress message string.
-func formatProgressMessage(currentItem, totalItems int, filename, bar string, writtenMB, totalMB, speed float64) string {
-	return fmt.Sprintf("[%d/%d] Downloading: %s [%s] [%.0fMB/%.0fMB] (%.0f Mb/s)",
-		currentItem, totalItems, filename, bar, writtenMB, totalMB, speed)
+func formatProgressMessage(
+	currentItem, totalItems int,
+	filename, bar string,
+	writtenMB, totalMB, speed float64,
+) string {
+	return fmt.Sprintf(
+		"[%d/%d] Downloading: %s [%s] [%.0fMB/%.0fMB] (%.0f Mb/s)",
+		currentItem,
+		totalItems,
+		filename,
+		bar,
+		writtenMB,
+		totalMB,
+		speed,
+	)
 }
 
 // truncateProgressMessage ensures the progress message fits within terminal width.
 func truncateProgressMessage(progress string, termWidth int) string {
 	if len(progress) > termWidth {
 		maxLength := max(0, termWidth-truncationSuffixLength)
+
 		return progress[:maxLength] + truncationSuffix
 	}
 

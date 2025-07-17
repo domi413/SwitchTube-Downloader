@@ -85,7 +85,11 @@ func TestInput(t *testing.T) {
 			}
 
 			if !strings.Contains(capturedOutput, tt.prompt) {
-				t.Errorf("Input() did not print prompt. Got: %v, expected to contain: %v", capturedOutput, tt.prompt)
+				t.Errorf(
+					"Input() did not print prompt. Got: %v, expected to contain: %v",
+					capturedOutput,
+					tt.prompt,
+				)
 			}
 		})
 	}
@@ -201,7 +205,11 @@ func TestConfirm(t *testing.T) {
 
 			expectedPrompt := tt.prompt + " (y/N): "
 			if !strings.Contains(capturedOutput, expectedPrompt) {
-				t.Errorf("Confirm() did not print expected prompt. Got: %v, expected to contain: %v", capturedOutput, expectedPrompt)
+				t.Errorf(
+					"Confirm() did not print expected prompt. Got: %v, expected to contain: %v",
+					capturedOutput,
+					expectedPrompt,
+				)
 			}
 		})
 	}

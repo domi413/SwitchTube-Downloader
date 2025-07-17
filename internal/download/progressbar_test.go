@@ -268,7 +268,11 @@ func TestTruncateFilename(t *testing.T) {
 
 			if tt.wantTruncated {
 				if !strings.HasSuffix(got, truncationSuffix) {
-					t.Errorf("truncateFilename() should end with '%s', got: %s", truncationSuffix, got)
+					t.Errorf(
+						"truncateFilename() should end with '%s', got: %s",
+						truncationSuffix,
+						got,
+					)
 				}
 				if len(got) >= len(tt.filename) {
 					t.Errorf("truncateFilename() should be shorter than original")
@@ -283,7 +287,11 @@ func TestTruncateFilename(t *testing.T) {
 			maxLength := tt.termWidth - tt.barLength - reservedSpace
 			maxLength = max(maxLength, minFilenameLength)
 			if len(got) > maxLength {
-				t.Errorf("truncateFilename() result length (%d) exceeds max length (%d)", len(got), maxLength)
+				t.Errorf(
+					"truncateFilename() result length (%d) exceeds max length (%d)",
+					len(got),
+					maxLength,
+				)
 			}
 		})
 	}
@@ -324,7 +332,15 @@ func TestFormatProgressMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := formatProgressMessage(tt.currentItem, tt.totalItems, tt.filename, tt.bar, tt.writtenMB, tt.totalMB, tt.speed)
+			got := formatProgressMessage(
+				tt.currentItem,
+				tt.totalItems,
+				tt.filename,
+				tt.bar,
+				tt.writtenMB,
+				tt.totalMB,
+				tt.speed,
+			)
 
 			// Check that the message contains expected components
 			if !strings.Contains(got, tt.filename) {
@@ -335,7 +351,11 @@ func TestFormatProgressMessage(t *testing.T) {
 				t.Errorf("formatProgressMessage() should contain progress bar '%s'", tt.bar)
 			}
 
-			expectedPrefix := "[" + string(rune(tt.currentItem+'0')) + "/" + string(rune(tt.totalItems+'0')) + "]"
+			expectedPrefix := "[" + string(
+				rune(tt.currentItem+'0'),
+			) + "/" + string(
+				rune(tt.totalItems+'0'),
+			) + "]"
 			if !strings.Contains(got, expectedPrefix) {
 				t.Errorf("formatProgressMessage() should contain item counter '%s'", expectedPrefix)
 			}
@@ -394,13 +414,21 @@ func TestTruncateProgressMessage(t *testing.T) {
 			got := truncateProgressMessage(tt.progress, tt.termWidth)
 
 			if len(got) > tt.termWidth {
-				t.Errorf("truncateProgressMessage() result length (%d) exceeds terminal width (%d)", len(got), tt.termWidth)
+				t.Errorf(
+					"truncateProgressMessage() result length (%d) exceeds terminal width (%d)",
+					len(got),
+					tt.termWidth,
+				)
 			}
 
 			if len(tt.progress) <= tt.termWidth {
 				// Should not be modified
 				if got != tt.progress {
-					t.Errorf("truncateProgressMessage() should not modify message that fits, got: %s, want: %s", got, tt.progress)
+					t.Errorf(
+						"truncateProgressMessage() should not modify message that fits, got: %s, want: %s",
+						got,
+						tt.progress,
+					)
 				}
 			} else {
 				// Should be truncated and end with suffix

@@ -1,6 +1,12 @@
 package media
 
-func downloadVideo(videoId string, token string, currentItem int, totalItems int, force bool) error {
+func downloadVideo(
+	videoId string,
+	token string,
+	currentItem int,
+	totalItems int,
+	force bool,
+) error {
 	return nil
 }
 
