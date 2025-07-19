@@ -83,7 +83,7 @@ func Download(media string, useEpisode bool, force bool, all bool) error {
 	case videoType:
 		err = downloadVideo(id, token, 1, 1, useEpisode, force)
 		if err != nil {
-			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
+			return fmt.Errorf("%w: %w (token might be invalid)", errFailedToDownloadVideo, err)
 		}
 	case unknownType:
 		err = downloadVideo(id, token, 1, 1, useEpisode, force)
@@ -95,7 +95,7 @@ func Download(media string, useEpisode bool, force bool, all bool) error {
 	case channelType:
 		err = downloadChannel(id, token, useEpisode, force, all)
 		if err != nil {
-			return fmt.Errorf("%w: %w", errFailedToDownloadChannel, err)
+			return fmt.Errorf("%w: %w (token might be invalid)", errFailedToDownloadChannel, err)
 		}
 	default:
 		return errCouldNotDetermineType

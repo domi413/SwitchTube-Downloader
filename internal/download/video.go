@@ -42,7 +42,12 @@ func downloadVideo(
 		return fmt.Errorf("%w: %w", errFailedGetVideoVariants, err)
 	}
 
-	filename := createFilename(videoData.Title, variants[0].MediaType, videoData.Episode, useEpisode)
+	filename := createFilename(
+		videoData.Title,
+		variants[0].MediaType,
+		videoData.Episode,
+		useEpisode,
+	)
 
 	file, err := createFile(filename, force)
 	if err != nil {
