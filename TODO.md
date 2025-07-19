@@ -7,3 +7,4 @@
 - [ ] double overwrite ui bug
 - [ ] clean up download/
 - [ ] write tests for download/
+- [ ] Fix required workflows
