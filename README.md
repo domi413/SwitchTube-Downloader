@@ -8,13 +8,13 @@ to easily download videos from [SwitchTube](https://tube.switch.ch/).
 <!-- TODO: Change link to actual release page -->
 
 1. **Download the Binary**: Visit the [releases page](https://github.com/domi413/SwitchTube-Downloader)
-   to obtain the appropriate binary for your operating system (Linux, MacOS, or Windows).
+   to obtain the appropriate binary for your operating system (Linux, MacOS, Windows).
    _Note_: You may need to make the binary executable
 
-2. **Explore Usage**: Run `./switch-tube-downloader` to access the help menu,
+2. **Usage**: Run `./switch-tube-downloader` to access the help menu,
    which provides clear guidance on available commands.
 
-3. **Obtain an Access Token**: A SwitchTube access token is required. Generate
+3. **Create access token**: A SwitchTube access token is required. Generate
    one [here](https://tube.switch.ch/access_tokens) to authenticate your
    requests.
 
@@ -59,12 +59,12 @@ For developers or curious users, you can interact directly with the SwitchTube A
 
 ```bash
 curl -H "Authorization: Token {your_token}" \
-     https://tube.switch.ch/api/v1/xxx
+        https://tube.switch.ch/api/v1/xxx
 ```
 
 E.g., you can write the output to a file to examine the JSON structure:
 
 ```bash
-curl -H "Authorization: Token cs6UwtHX7DyV2e_CTfS6Bw2twEqeRemiQhNr5Rkt4TU" \
-               https://tube.switch.ch/api/v1/browse/channels/{channel_id}/videos | tee tmp.json
+curl -H "Authorization: Token {your_token}" \
+        https://tube.switch.ch/api/v1/browse/channels/{channel_id}/videos | tee tmp.json
 ```
