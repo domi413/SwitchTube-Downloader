@@ -51,11 +51,20 @@ While other tools exist for downloading SwitchTube content, **SwitchTube-Downloa
 | **Channel download**           | Supported ✅                                                              | Supported ✅                                              | Supported ✅                                                   |
 | **Select videos of a channel** | Supported ✅                                                              | Supported ✅                                              | Not supported                                                  |
 
+Honorable mention: There is yet another SwitchTube downloader also written in go: [switchdl](https://github.com/Erl-koenig/switchdl)
+
 ## Testing the SwitchTube API
 
 For developers or curious users, you can interact directly with the SwitchTube API using the following command:
 
 ```bash
-curl -H "Authorization: Token your_token" \
+curl -H "Authorization: Token {your_token}" \
      https://tube.switch.ch/api/v1/xxx
+```
+
+E.g., you can write the output to a file to examine the JSON structure:
+
+```bash
+curl -H "Authorization: Token cs6UwtHX7DyV2e_CTfS6Bw2twEqeRemiQhNr5Rkt4TU" \
+               https://tube.switch.ch/api/v1/browse/channels/{channel_id}/videos | tee tmp.json
 ```

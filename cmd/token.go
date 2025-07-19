@@ -58,7 +58,7 @@ var tokenSetCmd = &cobra.Command{
 			return
 		}
 
-		fmt.Println("Token successfully created and stored")
+		fmt.Println("Token successfully stored")
 	},
 }
 

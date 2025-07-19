@@ -187,7 +187,7 @@ func TestConfirm(t *testing.T) {
 			} else {
 				expectedBase = tt.format
 			}
-			expectedPrompt := expectedBase + " (y/n): "
+			expectedPrompt := expectedBase + " (y/N): "
 
 			if !strings.Contains(capturedOutput, expectedPrompt) {
 				t.Errorf(

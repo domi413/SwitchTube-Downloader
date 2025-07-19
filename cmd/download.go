@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	media "switch-tube-downloader/internal/download"
+	download "switch-tube-downloader/internal/download"
 
 	"github.com/spf13/cobra"
 )
@@ -14,13 +14,16 @@ func init() {
 	rootCmd.AddCommand(downloadCmd)
 	downloadCmd.Flags().BoolP("force", "f", false, "Force overwrite if file already exist")
 	downloadCmd.Flags().BoolP("all", "a", false, "Download the whole content of a channel")
+	downloadCmd.Flags().
+		BoolP("episode", "e", false, "Prefixes the video with episode-number e.g. 01_OR_Mapping.mp4")
 }
 
 var downloadCmd = &cobra.Command{
-	Use:   "download <id>",
+	Use:   "download <id|url>",
 	Short: "Download a video or channel",
-	Long:  "Download a video or channel. Automatically detects if input is a video or channel.",
-	Args:  cobra.ExactArgs(1),
+	Long: "Download a video or channel. Automatically detects if input is a video or channel.\n" +
+		"You can also pass the whole URL instead of the ID for convenience.",
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		id := args[0]
 
@@ -38,7 +41,14 @@ var downloadCmd = &cobra.Command{
 			return
 		}
 
-		err = media.Download(id, force, all)
+		episode, err := cmd.Flags().GetBool("episode")
+		if err != nil {
+			fmt.Printf("Error getting episode flag: %v", err)
+
+			return
+		}
+
+		err = download.Download(id, episode, force, all)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
 
