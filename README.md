@@ -155,7 +155,7 @@ Honorable mention: There is yet another SwitchTube downloader also written in go
 
 Too many flags can make a command-line tool cumbersome. The current design
 focuses on simplicity and ease of use. Also providing a `-o` or `--output` which
-could be passed e.g., `switch-tube-downloader download xyzabc -o /path/to/dir`
+could be passed e.g., `switch-tube-downloader download dh0sX6Fj1I -o /path/to/dir`
 will result in a complex command structure, which is not user-friendly.
 
 Though, if there is a strong demand for this feature, I might consider adding it.
