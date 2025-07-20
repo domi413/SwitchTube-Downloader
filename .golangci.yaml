@@ -10,9 +10,16 @@ linters:
     - wsl
 
   exclusions:
-    paths:
-      - internal/download/download.go
-      - _test.go
+    rules:
+      - path: _test\.go
+        linters:
+          - cyclop
+          - errcheck
+          - exhaustruct
+          - funlen
+          - gosec
+          - paralleltest
+          - testpackage
 
   settings:
     exhaustruct:

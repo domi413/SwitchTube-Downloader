@@ -15,6 +15,6 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number of the SwitchTube downloader",
 	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Println("TODO: Dynamically add correct version")
+		fmt.Println("TODO: Dynamically set correct version")
 	},
 }

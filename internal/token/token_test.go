@@ -39,6 +39,7 @@ func TestGet(t *testing.T) {
 				if userErr != nil {
 					t.Fatalf("Failed to get current user: %v", userErr)
 				}
+
 				keyring.Set(serviceName, currentUser.Username, tt.tokenValue)
 			}
 
@@ -52,6 +53,7 @@ func TestGet(t *testing.T) {
 				if err != nil {
 					t.Errorf("Get() error = %v, want nil", err)
 				}
+
 				if token != tt.wantToken {
 					t.Errorf("Get() token = %v, want %v", token, tt.wantToken)
 				}
@@ -64,6 +66,7 @@ func TestSet(t *testing.T) {
 	// Capture stdout to hide prompts
 	oldStdout := os.Stdout
 	os.Stdout, _ = os.Open(os.DevNull)
+
 	defer func() { os.Stdout = oldStdout }()
 
 	tests := []struct {
@@ -78,7 +81,7 @@ func TestSet(t *testing.T) {
 		{
 			name:          "replace existing token - declined",
 			existingToken: true,
-			wantErr:       false,
+			wantErr:       true,
 		},
 		{
 			name:    "empty token input",
@@ -95,10 +98,12 @@ func TestSet(t *testing.T) {
 				if userErr != nil {
 					t.Fatalf("Failed to get current user: %v", userErr)
 				}
+
 				keyring.Set(serviceName, currentUser.Username, "existing-token")
 			}
 
 			var input string
+
 			switch tt.name {
 			case "replace existing token - declined":
 				input = "n\n"
@@ -108,7 +113,7 @@ func TestSet(t *testing.T) {
 				input = "new-token\n"
 			}
 
-			tmpFile, err := os.CreateTemp("", "test-input")
+			tmpFile, err := os.CreateTemp(t.TempDir(), "test-input")
 			if err != nil {
 				t.Fatalf("Failed to create temp file: %v", err)
 			}
@@ -119,10 +124,10 @@ func TestSet(t *testing.T) {
 
 			oldStdin := os.Stdin
 			os.Stdin = tmpFile
+
 			defer func() { os.Stdin = oldStdin }()
 
 			err = Set()
-
 			if tt.wantErr && err == nil {
 				t.Error("Set() expected error but got nil")
 			} else if !tt.wantErr && err != nil {
@@ -158,11 +163,11 @@ func TestDelete(t *testing.T) {
 				if userErr != nil {
 					t.Fatalf("Failed to get current user: %v", userErr)
 				}
+
 				keyring.Set(serviceName, currentUser.Username, "test-token")
 			}
 
 			err := Delete()
-
 			if tt.wantErrType != nil {
 				if err == nil || !errors.Is(err, tt.wantErrType) {
 					t.Errorf("Delete() error = %v, want error type %v", err, tt.wantErrType)
@@ -178,6 +183,7 @@ func TestCreate(t *testing.T) {
 	// Capture stdout to hide prompts
 	oldStdout := os.Stdout
 	os.Stdout, _ = os.Open(os.DevNull)
+
 	defer func() { os.Stdout = oldStdout }()
 
 	tests := []struct {
@@ -222,19 +228,22 @@ func TestCreate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpFile, err := os.CreateTemp("", "test-input")
+			tmpFile, err := os.CreateTemp(t.TempDir(), "test-input")
 			if err != nil {
 				t.Fatalf("Failed to create temp file: %v", err)
 			}
 			defer os.Remove(tmpFile.Name())
 
-			if _, err := tmpFile.WriteString(tt.input); err != nil {
+			_, err = tmpFile.WriteString(tt.input)
+			if err != nil {
 				t.Fatalf("Failed to write to temp file: %v", err)
 			}
+
 			tmpFile.Seek(0, 0)
 
 			oldStdin := os.Stdin
 			os.Stdin = tmpFile
+
 			defer func() { os.Stdin = oldStdin }()
 
 			token, err := create()

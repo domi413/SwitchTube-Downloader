@@ -165,6 +165,7 @@ func TestCalculateDownloadSpeed(t *testing.T) {
 				if diff < 0 {
 					diff = -diff
 				}
+
 				if diff > tt.tolerance {
 					t.Errorf("calculateDownloadSpeed() = %v, want %v ± %v", got, tt.wantSpeed, tt.tolerance)
 				}
@@ -274,17 +275,17 @@ func TestTruncateFilename(t *testing.T) {
 						got,
 					)
 				}
+
 				if len(got) >= len(tt.filename) {
 					t.Errorf("truncateFilename() should be shorter than original")
 				}
-			} else {
-				if got != tt.filename {
-					t.Errorf("truncateFilename() should not modify filename, got: %s, want: %s", got, tt.filename)
-				}
+			} else if got != tt.filename {
+				t.Errorf("truncateFilename() should not modify filename, got: %s, want: %s", got, tt.filename)
 			}
 
 			// Verify the result respects the calculated max length
 			maxLength := tt.termWidth - tt.barLength - reservedSpace
+
 			maxLength = max(maxLength, minFilenameLength)
 			if len(got) > maxLength {
 				t.Errorf(

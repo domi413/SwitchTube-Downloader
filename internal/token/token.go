@@ -14,10 +14,14 @@ import (
 
 const (
 	serviceName          = "SwitchTube"
-	createAccessTokenAPI = "https://tube.switch.ch/access_tokens"
+	createAccessTokenURL = "https://tube.switch.ch/access_tokens"
 )
 
 var (
+	// ErrTokenAlreadyExists is returned when trying to set a token that already
+	// exists in the keyring.
+	ErrTokenAlreadyExists = errors.New("token already exists in keyring")
+
 	errTokenEmpty         = errors.New("token cannot be empty")
 	errNoTokenFoundDelete = errors.New("no token found in keyring")
 	errFailedToGetUser    = errors.New("failed to get current user")
@@ -57,7 +61,7 @@ func Set() error {
 		if !prompt.Confirm("Do you want to replace it?") {
 			fmt.Println("Operation cancelled")
 
-			return nil
+			return fmt.Errorf("%w", ErrTokenAlreadyExists)
 		}
 	}
 
@@ -100,7 +104,7 @@ func Delete() error {
 
 // create prompts the user to visit the access token creation URL and enter a new token.
 func create() (string, error) {
-	fmt.Printf("Please visit: %s\n", createAccessTokenAPI)
+	fmt.Printf("Please visit: %s\n", createAccessTokenURL)
 	fmt.Printf("Create a new access token and paste it below\n\n")
 
 	token := prompt.Input("Enter your access token: ")

@@ -49,27 +49,31 @@ func TestInput(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create temp file for stdin simulation
-			tmpFile, err := os.CreateTemp("", "test-input")
+			tmpFile, err := os.CreateTemp(t.TempDir(), "test-input")
 			if err != nil {
 				t.Fatalf("Failed to create temp file: %v", err)
 			}
 			defer os.Remove(tmpFile.Name())
 
 			// Write test input
-			if _, err := tmpFile.WriteString(tt.input); err != nil {
+			_, err = tmpFile.WriteString(tt.input)
+			if err != nil {
 				t.Fatalf("Failed to write to temp file: %v", err)
 			}
+
 			tmpFile.Seek(0, 0)
 
 			// Redirect stdin
 			oldStdin := os.Stdin
 			os.Stdin = tmpFile
+
 			defer func() { os.Stdin = oldStdin }()
 
 			// Capture stdout to verify prompt is printed
 			oldStdout := os.Stdout
 			r, w, _ := os.Pipe()
 			os.Stdout = w
+
 			defer func() { os.Stdout = oldStdout }()
 
 			// Test the function
@@ -77,6 +81,7 @@ func TestInput(t *testing.T) {
 
 			// Close writer and read captured output
 			w.Close()
+
 			output := make([]byte, 1000)
 			n, _ := r.Read(output)
 			capturedOutput := string(output[:n])
@@ -100,7 +105,7 @@ func TestConfirm(t *testing.T) {
 	tests := []struct {
 		name   string
 		format string
-		args   []interface{}
+		args   []any
 		input  string
 		want   bool
 	}{
@@ -139,27 +144,31 @@ func TestConfirm(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create temp file for stdin simulation
-			tmpFile, err := os.CreateTemp("", "test-input")
+			tmpFile, err := os.CreateTemp(t.TempDir(), "test-input")
 			if err != nil {
 				t.Fatalf("Failed to create temp file: %v", err)
 			}
 			defer os.Remove(tmpFile.Name())
 
 			// Write test input
-			if _, err := tmpFile.WriteString(tt.input); err != nil {
+			_, err = tmpFile.WriteString(tt.input)
+			if err != nil {
 				t.Fatalf("Failed to write to temp file: %v", err)
 			}
+
 			tmpFile.Seek(0, 0)
 
 			// Redirect stdin
 			oldStdin := os.Stdin
 			os.Stdin = tmpFile
+
 			defer func() { os.Stdin = oldStdin }()
 
 			// Capture stdout to verify prompt is printed
 			oldStdout := os.Stdout
 			r, w, _ := os.Pipe()
 			os.Stdout = w
+
 			defer func() { os.Stdout = oldStdout }()
 
 			// Test the function
@@ -172,6 +181,7 @@ func TestConfirm(t *testing.T) {
 
 			// Close writer and read captured output
 			w.Close()
+
 			output := make([]byte, 1000)
 			n, _ := r.Read(output)
 			capturedOutput := string(output[:n])
@@ -187,6 +197,7 @@ func TestConfirm(t *testing.T) {
 			} else {
 				expectedBase = tt.format
 			}
+
 			expectedPrompt := expectedBase + " (y/N): "
 
 			if !strings.Contains(capturedOutput, expectedPrompt) {
@@ -202,7 +213,7 @@ func TestConfirm(t *testing.T) {
 
 func TestConfirmPromptFormat(t *testing.T) {
 	// Test that Confirm appends the correct suffix to the prompt
-	tmpFile, err := os.CreateTemp("", "test-input")
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-input")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
@@ -213,16 +224,19 @@ func TestConfirmPromptFormat(t *testing.T) {
 
 	oldStdin := os.Stdin
 	os.Stdin = tmpFile
+
 	defer func() { os.Stdin = oldStdin }()
 
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
+
 	defer func() { os.Stdout = oldStdout }()
 
 	Confirm("Test prompt")
 
 	w.Close()
+
 	output := make([]byte, 1000)
 	n, _ := r.Read(output)
 	capturedOutput := string(output[:n])
@@ -234,7 +248,7 @@ func TestConfirmPromptFormat(t *testing.T) {
 }
 
 func TestInputEmptyPrompt(t *testing.T) {
-	tmpFile, err := os.CreateTemp("", "test-input")
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-input")
 	if err != nil {
 		t.Fatalf("Failed to create temp file: %v", err)
 	}
@@ -245,16 +259,19 @@ func TestInputEmptyPrompt(t *testing.T) {
 
 	oldStdin := os.Stdin
 	os.Stdin = tmpFile
+
 	defer func() { os.Stdin = oldStdin }()
 
 	oldStdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
+
 	defer func() { os.Stdout = oldStdout }()
 
 	result := Input("")
 
 	w.Close()
+
 	output := make([]byte, 1000)
 	n, _ := r.Read(output)
 	capturedOutput := string(output[:n])
