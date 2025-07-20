@@ -83,7 +83,7 @@ func Download(media string, useEpisode bool, force bool, all bool) error {
 	case videoType:
 		err = downloadVideo(id, token, 1, 1, useEpisode, force)
 		if err != nil {
-			return fmt.Errorf("%w: %w (token might be invalid)", errFailedToDownloadVideo, err)
+			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 		}
 	case unknownType:
 		err = downloadVideo(id, token, 1, 1, useEpisode, force)
@@ -95,7 +95,7 @@ func Download(media string, useEpisode bool, force bool, all bool) error {
 	case channelType:
 		err = downloadChannel(id, token, useEpisode, force, all)
 		if err != nil {
-			return fmt.Errorf("%w: %w (token might be invalid)", errFailedToDownloadChannel, err)
+			return fmt.Errorf("%w: %w", errFailedToDownloadChannel, err)
 		}
 	default:
 		return errCouldNotDetermineType
@@ -141,7 +141,12 @@ func downloadProcess(
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("%w: status %d", errHTTPNotOK, resp.StatusCode)
+		return fmt.Errorf(
+			"%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
 	}
 
 	err = copyWithProgress(resp.Body, out, resp.ContentLength, filename, currentItem, totalItems)
@@ -201,15 +206,15 @@ func extractIDAndType(input string) (string, mediaType, error) {
 		return input, unknownType, nil
 	}
 
-	id := strings.TrimPrefix(input, baseURL)
+	prefixAndID := strings.TrimPrefix(input, baseURL)
 
 	switch {
-	case strings.HasPrefix(id, videoPrefix):
-		return strings.TrimPrefix(id, videoPrefix), videoType, nil
-	case strings.HasPrefix(id, channelPrefix):
-		return strings.TrimPrefix(id, channelPrefix), channelType, nil
+	case strings.HasPrefix(prefixAndID, videoPrefix):
+		return strings.TrimPrefix(prefixAndID, videoPrefix), videoType, nil
+	case strings.HasPrefix(prefixAndID, channelPrefix):
+		return strings.TrimPrefix(prefixAndID, channelPrefix), channelType, nil
 	default:
-		return id, unknownType, errInvalidURL
+		return prefixAndID, unknownType, errInvalidURL
 	}
 }
 

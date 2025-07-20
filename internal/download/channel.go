@@ -170,7 +170,12 @@ func getChannelVideos(channelID, token string) ([]video, error) {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: status %d", errHTTPNotOK, resp.StatusCode)
+		return nil, fmt.Errorf(
+			"%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
 	}
 
 	var videos []video
@@ -281,7 +286,12 @@ func getChannelInfo(channelID, token string) (*channelInfo, error) {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: status %d", errHTTPNotOK, resp.StatusCode)
+		return nil, fmt.Errorf(
+			"%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
 	}
 
 	var channelData channelInfo

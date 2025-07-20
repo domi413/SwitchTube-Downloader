@@ -85,7 +85,12 @@ func getVideoMetadata(videoID, token string) (*video, error) {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: status %d", errHTTPNotOK, resp.StatusCode)
+		return nil, fmt.Errorf(
+			"%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
 	}
 
 	var videoData video
@@ -115,7 +120,12 @@ func getVideoVariants(videoID, token string) ([]videoVariant, error) {
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("%w: status %d", errHTTPNotOK, resp.StatusCode)
+		return nil, fmt.Errorf(
+			"%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
 	}
 
 	var variants []videoVariant

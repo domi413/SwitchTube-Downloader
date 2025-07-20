@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"switch-tube-downloader/internal/token"
@@ -52,7 +53,10 @@ var tokenSetCmd = &cobra.Command{
 	Long:  "Create and store a new SwitchTube access token in the system keyring",
 	Run: func(_ *cobra.Command, _ []string) {
 		err := token.Set()
-		if err != nil {
+
+		if errors.Is(err, token.ErrTokenAlreadyExists) {
+			return
+		} else if err != nil {
 			fmt.Printf("Error setting token: %v\n", err)
 
 			return
