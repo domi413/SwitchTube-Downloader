@@ -24,8 +24,16 @@ archives:
 
 changelog:
   use: github
+  format: "- {{.Message}} by @{{.AuthorUsername}}[{{.SHA}}]"
   sort: asc
   abbrev: -1
 
-  divider: "\n\n"
-  format: "- {{.Message}} by @{{.AuthorUsername}}[{{.SHA}}]"
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "Bug fixes"
+      regexp: '^.*?bug(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
