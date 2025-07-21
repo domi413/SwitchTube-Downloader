@@ -1,0 +1,18 @@
+build:
+  - head-branch: "^build"
+chore:
+  - head-branch: "^chore"
+pipeline:
+  - head-branch: "^ci"
+documentation:
+  - head-branch: "^docs"
+feature:
+  - head-branch: "^feat"
+fix:
+  - head-branch: "^fix"
+performance:
+  - head-branch: "^perf"
+refactor:
+  - head-branch: "^refactor"
+test:
+  - head-branch: "^test"
