@@ -10,17 +10,42 @@ builds:
     goarch:
       - amd64
       - arm64
-    main: ./cmd/switch-tube-downloader
+    main: ./main.go
     binary: switch-tube-downloader
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.Commit}} -X main.Date={{.Date}}
 
 archives:
-  - formats: ["zip", "tar.gz"]
+  - format: "zip"
     name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}"
     files:
       - README.md
       - LICENSE
 
+release:
+  github:
+    owner: domi413
+    name: SwitchTube-Downloader
+
+  header: |
+    ## What's Changed
+
 changelog:
-  disable: true
+  use: github
+  format: "- {{.Message}} by @{{.AuthorUsername}}[{{.SHA}}]"
+  sort: asc
+  abbrev: -1
+
+  groups:
+    - title: "✨ Features"
+      regexp: '^.*?(feat|perf)(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: "🔧 Fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: "🛠️ Maintenance"
+      regexp: '^.*?(build|chore|ci|refactor)(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: "🧪 Tests"
+      regexp: '^.*?test(\([[:word:]]+\))??!?:.+$'
+      order: 4
