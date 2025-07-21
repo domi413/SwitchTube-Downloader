@@ -1,3 +1,5 @@
+version: 2
+
 builds:
   - env:
       - CGO_ENABLED=0
@@ -8,5 +10,17 @@ builds:
     goarch:
       - amd64
       - arm64
+    main: ./cmd/switch-tube-downloader
+    binary: switch-tube-downloader
     ldflags:
-      - -s -w
+      - -s -w -X main.Version={{.Version}} -X main.Commit={{.Commit}} -X main.Date={{.Date}}
+
+archives:
+  - formats: ["zip", "tar.gz"]
+    name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - README.md
+      - LICENSE
+
+changelog:
+  disable: true
