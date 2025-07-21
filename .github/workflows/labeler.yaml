@@ -17,19 +17,18 @@ jobs:
 
     steps:
       - uses: actions/github-script@v6
-        if: env.ACT != 'true'
         with:
           script: |
             const patterns = {
-              '^build':    'build',         // Build-related changes
-              '^chore':    'chore',         // Maintenance tasks
-              '^ci':       'pipeline',      // Ci/Cd related changes
-              '^docs':     'documentation', // Documentation updates
-              '^feat':     'feature',       // New features
-              '^fix':      'fix',           // Bug fixes
-              '^perf':     'performance',   // Performance improvements
-              '^refactor': 'refactor',      // Code refactoring
-              '^test':     'test',          // Test-related changes
+              '^build':    'build',
+              '^chore':    'chore',
+              '^ci':       'pipeline',
+              '^docs':     'documentation',
+              '^feat':     'feature',
+              '^fix':      'fix',
+              '^perf':     'performance',
+              '^refactor': 'refactor',
+              '^test':     'test'
             };
 
             // Get label of the title
