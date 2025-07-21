@@ -16,7 +16,7 @@ builds:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.Commit}} -X main.Date={{.Date}}
 
 archives:
-  - formats: ["zip", "tar.gz"]
+  - format: "zip"
     name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}"
     files:
       - README.md
