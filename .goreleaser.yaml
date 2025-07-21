@@ -29,11 +29,15 @@ changelog:
   abbrev: -1
 
   groups:
-    - title: Features
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
-      order: 0
-    - title: "Bug fixes"
-      regexp: '^.*?bug(\([[:word:]]+\))??!?:.+$'
+    - title: "✨ Features"
+      regexp: '^.*?(feat|perf)(\([[:word:]]+\))??!?:.+$'
       order: 1
-    - title: Others
-      order: 999
+    - title: "🔧 Fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: "🛠️ Maintenance"
+      regexp: '^.*?(build|chore|ci|refactor)(\([[:word:]]+\))??!?:.+$'
+      order: 3
+    - title: "🧪 Tests"
+      regexp: '^.*?test(\([[:word:]]+\))??!?:.+$'
+      order: 4
