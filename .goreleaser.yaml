@@ -26,30 +26,6 @@ changelog:
   use: github
   sort: asc
   abbrev: -1
-  groups:
-    - title: "📚 Documentation"
-      regexp: "^.*?docs.*"
-      order: 0
-
-    - title: "✨ Features"
-      regexp: "^.*?(feat|perf)(\([[:word:]]+\))??!?:.*"
-      order: 1
-
-    - title: "🔧 Fixes"
-      regexp: "^.*?fix(\([[:word:]]+\))??!?:.*"
-      order: 2
-
-    - title: "🛠️ Maintenance"
-      regexp: "^.*?(build|chore|ci|refactor)(\([[:word:]]+\))??!?:.*"
-      order: 3
-
-    - title: "🧪 Tests"
-      regexp: "^.*?test(\([[:word:]]+\))??!?:.*"
-      order: 4
 
   divider: "\n\n"
   format: "- {{.Message}} by @{{.AuthorUsername}}[{{.SHA}}]"
-
-release_notes:
-  header: "## What's Changed"
-  footer: "\n\n**Full Changelog**: https://github.com/{{.Owner}}/{{.Repo}}/compare/{{.PreviousTag}}...v{{.Version}}"
