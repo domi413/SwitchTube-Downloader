@@ -10,10 +10,12 @@ to easily download videos from [SwitchTube](https://tube.switch.ch/).
 1. **Download the binary**: Visit the [releases page](https://github.com/domi413/SwitchTube-Downloader)
    to obtain the appropriate binary for your operating system (Linux, MacOS, Windows).
 
-2. **Make executable**: After downloading, ensure the binary is executable by running:
+2. **Make executable**: After downloading, ensure the binary is executable. For Linux and MacOS, run:
+
    ```bash
    chmod +x switch-tube-downloader
    ```
+
 3. **Usage**: Run `./switch-tube-downloader` to access the help menu,
    which provides clear guidance on available commands.
 
@@ -41,7 +43,7 @@ Use "SwitchTube-Downloader [command] --help" for more information about a comman
 ```
 
 <details>
-  <summary>Click for Detailed Usage Instructions</summary>
+  <summary>[Click me] for detailed usage instructions</summary>
 
 Running the SwitchTube Downloader without arguments displays available commands:
 
@@ -105,7 +107,7 @@ You can add optional flags to customize the download. For example:
 - Multiple flags combined:
   <pre><code>./switch-tube-downloader download dh0sX6Fj1I -a -f -e</code></pre>
 
-## Managing Access Tokens
+## Managing access token
 
 The `token` command manages the SwitchTube access token stored in the system keyring:
 
