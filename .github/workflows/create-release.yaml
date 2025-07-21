@@ -1,4 +1,5 @@
 name: Generate Release Notes
+
 on:
   push:
     tags:
@@ -27,8 +28,8 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
-          version: "~> v2"
-          args: release --skip=publish
+          version: latest
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -43,5 +44,7 @@ jobs:
         uses: release-drafter/release-drafter@v6
         with:
           config-name: release-drafter.yaml
+          publish: true
+          latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
