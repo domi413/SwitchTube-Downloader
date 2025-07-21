@@ -76,7 +76,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: latest
+          go-version: "1.24"
+          check-latest: tru
 
       - name: Run tests
         run: go test ./...
@@ -103,7 +104,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: latest
+          go-version: "1.24"
+          check-latest: tru
 
       - name: Build
         run: go build -ldflags="-s -w" -v ./...
@@ -123,7 +125,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: latest
+          go-version: "1.24"
+          check-latest: tru
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v8
