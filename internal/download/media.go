@@ -22,10 +22,6 @@ const (
 	videoPrefix         = "videos/"
 	channelPrefix       = "channels/"
 	headerAuthorization = "Authorization"
-
-	// Buffer size for reading data
-	bufferSizeKB = 32
-	bufferSize   = bufferSizeKB * 1024
 )
 
 type mediaType int
