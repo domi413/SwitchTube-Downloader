@@ -2,150 +2,68 @@ package ui
 
 import (
 	"fmt"
-	"strings"
+	"io"
+	"path/filepath"
 	"time"
 
-	"golang.org/x/term"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 )
 
 const (
-	// Progress bar display constants.
-	percentageMultiplier = 100
-	progressBarLength    = 50
-	bytesPerKB           = 1024
-	bytesPerMB           = 1024 * 1024
-	bitsPerByte          = 8
+	progressBarWidth   = 60
+	refreshRateMs      = 200
+	etaSmoothingFactor = 30
 )
 
-const (
-	// Terminal display constants.
-	defaultTerminalWidth   = 80
-	reservedSpace          = 40
-	terminalWidthPadding   = 30
-	minBarLength           = 10
-	minFilenameLength      = 10
-	truncationSuffix       = "..."
-	truncationSuffixLength = 3
-	stdinFileDescriptor    = 0
-)
-
-const (
-	// ANSI escape codes.
-	clearLine = "\r\x1b[2K"
-)
-
-// ShowProgress displays a progress bar for downloading.
-func ShowProgress(
-	written, total int64,
+// CreateProgressBar sets up a progress bar for downloading and copies data from
+// src to dst.
+func CreateProgressBar(
+	src io.Reader,
+	dst io.Writer,
+	total int64,
 	filename string,
 	currentItem, totalItems int,
-	startTime time.Time,
-) {
-	termWidth := getTerminalWidth()
-	percent := float64(written) / float64(total) * percentageMultiplier
-	barLength := calculateBarLength(termWidth)
-	bar := renderProgressBar(percent, barLength)
-	speed := calculateDownloadSpeed(written, startTime)
-	writtenMB, totalMB := formatFileSize(written, total)
-	truncatedFilename := truncateFilename(filename, termWidth, barLength)
-
-	progress := formatProgressMessage(
-		currentItem,
-		totalItems,
-		truncatedFilename,
-		bar,
-		writtenMB,
-		totalMB,
-		speed,
+) error {
+	p := mpb.New(
+		mpb.WithWidth(progressBarWidth),
+		mpb.WithRefreshRate(refreshRateMs*time.Millisecond),
 	)
-	progress = truncateProgressMessage(progress, termWidth)
 
-	fmt.Printf("%s%s", clearLine, progress)
-}
+	bar := p.New(total,
+		mpb.BarStyle().Rbound("|"),
+		mpb.PrependDecorators(
+			decor.Name(
+				fmt.Sprintf("[%d/%d] %s ", currentItem, totalItems, filepath.Base(filename)),
+			),
+			decor.Counters(decor.SizeB1024(0), "% .2f / % .2f"),
+		),
+		mpb.AppendDecorators(
+			decor.EwmaETA(decor.ET_STYLE_GO, etaSmoothingFactor),
+			decor.Name(" ] "),
+			decor.EwmaSpeed(decor.SizeB1024(0), "% .2f", etaSmoothingFactor),
+		),
+	)
 
-// getTerminalWidth returns the current terminal width or default if unavailable.
-func getTerminalWidth() int {
-	if term.IsTerminal(stdinFileDescriptor) {
-		width, _, err := term.GetSize(stdinFileDescriptor)
-		if err == nil {
-			return width
+	proxyReader := bar.ProxyReader(src)
+
+	defer func() {
+		err := proxyReader.Close()
+		if err != nil {
+			fmt.Printf("error waiting for progress bar: %v\n", err)
 		}
+	}()
+
+	start := time.Now()
+
+	_, err := io.Copy(dst, proxyReader)
+	if err != nil {
+		return fmt.Errorf("failed to copy data: %w", err)
 	}
 
-	return defaultTerminalWidth
-}
+	bar.EwmaIncrInt64(total, time.Since(start))
 
-// calculateBarLength determines the appropriate progress bar length based on terminal width.
-func calculateBarLength(termWidth int) int {
-	barLength := progressBarLength
-	barLength = min(barLength, termWidth-terminalWidthPadding)
-	barLength = max(barLength, minBarLength)
+	p.Wait()
 
-	return barLength
-}
-
-// renderProgressBar creates the visual progress bar string.
-func renderProgressBar(percent float64, barLength int) string {
-	filled := int(float64(barLength) * percent / percentageMultiplier)
-
-	return strings.Repeat("#", filled) + strings.Repeat("-", barLength-filled)
-}
-
-// calculateDownloadSpeed computes the download speed in Mb/s.
-func calculateDownloadSpeed(written int64, startTime time.Time) float64 {
-	elapsed := time.Since(startTime).Seconds()
-	if elapsed > 0 {
-		return float64(written) / elapsed / (bytesPerMB / bitsPerByte) // Mb/s
-	}
-
-	return 0
-}
-
-// formatFileSize converts bytes to MB for display.
-func formatFileSize(written, total int64) (float64, float64) {
-	writtenMB := float64(written) / bytesPerMB
-	totalMB := float64(total) / bytesPerMB
-
-	return writtenMB, totalMB
-}
-
-// truncateFilename shortens the filename if it's too long for the terminal.
-func truncateFilename(filename string, termWidth, barLength int) string {
-	maxFilenameLength := termWidth - barLength - reservedSpace
-	maxFilenameLength = max(maxFilenameLength, minFilenameLength)
-
-	if len(filename) > maxFilenameLength {
-		return filename[:maxFilenameLength-truncationSuffixLength] + truncationSuffix
-	}
-
-	return filename
-}
-
-// formatProgressMessage creates the complete progress message string.
-func formatProgressMessage(
-	currentItem, totalItems int,
-	filename, bar string,
-	writtenMB, totalMB, speed float64,
-) string {
-	return fmt.Sprintf(
-		"[%d/%d] Downloading: %s [%s] [%.0fMB/%.0fMB] (%.0f Mb/s)",
-		currentItem,
-		totalItems,
-		filename,
-		bar,
-		writtenMB,
-		totalMB,
-		speed,
-	)
-}
-
-// truncateProgressMessage ensures the progress message fits within terminal width.
-func truncateProgressMessage(progress string, termWidth int) string {
-	if len(progress) > termWidth {
-		maxLength := max(0, termWidth-truncationSuffixLength)
-
-		return progress[:maxLength] + truncationSuffix
-	}
-
-	return progress
+	return nil
 }

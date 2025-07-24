@@ -13,7 +13,7 @@ builds:
     main: ./main.go
     binary: switch-tube-downloader
     ldflags:
-      - -s -w -X main.Version={{.Version}} -X main.Commit={{.Commit}} -X main.Date={{.Date}}
+      - -s -w -X switch-tube-downloader/cmd.version=$(git describe --tags --always)
 
 archives:
   - format: "zip"
@@ -27,12 +27,11 @@ release:
     owner: domi413
     name: SwitchTube-Downloader
 
-  header: |
-    ## What's Changed
+  mode: replace
 
 changelog:
   use: github
-  format: "- {{.Message}} by @{{.AuthorUsername}}[{{.SHA}}]"
+  format: "{{.Message}}  (@{{.AuthorUsername}} {{.SHA}})"
   sort: asc
   abbrev: -1
 
@@ -49,3 +48,9 @@ changelog:
     - title: "🧪 Tests"
       regexp: '^.*?test(\([[:word:]]+\))??!?:.+$'
       order: 4
+
+aurs:
+  - name: switch-tube-downloader
+    version: "{{.Version}}"
+    description: "A tool to download videos from SwitchTube."
+    url: "

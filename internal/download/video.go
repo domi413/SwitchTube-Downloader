@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
-	"time"
 
 	"switch-tube-downloader/internal/helper/dir"
 	"switch-tube-downloader/internal/helper/ui"
@@ -29,9 +27,7 @@ var (
 	errFailedFetchVideoStream  = errors.New("failed to fetch video stream")
 	errFailedGetVideoInfo      = errors.New("failed to get video information")
 	errFailedGetVideoVariants  = errors.New("failed to get video variants")
-	errFailedReadData          = errors.New("failed to read data")
 	errFailedToCreateVideoFile = errors.New("failed to create video file")
-	errFailedWriteToFile       = errors.New("failed to write to file")
 	errHTTPNotOK               = errors.New("HTTP request failed with non-OK status")
 	errNoVariantsFound         = errors.New("no video variants found")
 )
@@ -190,51 +186,17 @@ func downloadProcess(
 		)
 	}
 
-	err = copyWithProgress(resp.Body, file, resp.ContentLength, filename, currentItem, totalItems)
+	err = ui.CreateProgressBar(
+		resp.Body,
+		file,
+		resp.ContentLength,
+		filename,
+		currentItem,
+		totalItems,
+	)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedCopyVideoData, err)
 	}
-
-	return nil
-}
-
-// TODO: Do we really need this function?
-// copyWithProgress copies data from src to dst while showing download progress.
-func copyWithProgress(
-	src io.Reader,
-	dst io.Writer,
-	total int64,
-	filename string,
-	currentItem, totalItems int,
-) error {
-	buffer := make([]byte, bufferSize)
-
-	var written int64
-
-	startTime := time.Now()
-
-	for {
-		n, err := src.Read(buffer)
-		if n > 0 {
-			_, writeErr := dst.Write(buffer[:n])
-			if writeErr != nil {
-				return fmt.Errorf("%w: %w", errFailedWriteToFile, writeErr)
-			}
-
-			written += int64(n)
-			ui.ShowProgress(written, total, filename, currentItem, totalItems, startTime)
-		}
-
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return fmt.Errorf("%w: %w", errFailedReadData, err)
-		}
-	}
-
-	ui.ShowProgress(written, total, filename, currentItem, totalItems, startTime)
 
 	return nil
 }
