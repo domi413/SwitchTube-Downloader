@@ -4,6 +4,8 @@ package models
 type DownloadConfig struct {
 	Media      string
 	UseEpisode bool
+	Skip       bool
 	Force      bool
 	All        bool
+	Output     string
 }

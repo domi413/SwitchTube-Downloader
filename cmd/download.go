@@ -13,10 +13,12 @@ import (
 // its flags.
 func init() {
 	rootCmd.AddCommand(downloadCmd)
-	downloadCmd.Flags().BoolP("force", "f", false, "Force overwrite if file already exist")
 	downloadCmd.Flags().BoolP("all", "a", false, "Download the whole content of a channel")
 	downloadCmd.Flags().
 		BoolP("episode", "e", false, "Prefixes the video with episode-number e.g. 01_OR_Mapping.mp4")
+	downloadCmd.Flags().BoolP("force", "f", false, "Force overwrite if file already exist")
+	downloadCmd.Flags().StringP("output", "o", "", "Output directory for downloaded files")
+	downloadCmd.Flags().BoolP("skip", "s", false, "Skip video if it already exists")
 }
 
 var downloadCmd = &cobra.Command{
@@ -30,16 +32,10 @@ var downloadCmd = &cobra.Command{
 			Media: args[0],
 		}
 
-		force, err := cmd.Flags().GetBool("force")
-		if err != nil {
-			fmt.Printf("Error getting force flag: %v", err)
-			return
-		}
-		config.Force = force
-
 		all, err := cmd.Flags().GetBool("all")
 		if err != nil {
 			fmt.Printf("Error getting all flag: %v", err)
+
 			return
 		}
 		config.All = all
@@ -47,13 +43,39 @@ var downloadCmd = &cobra.Command{
 		episode, err := cmd.Flags().GetBool("episode")
 		if err != nil {
 			fmt.Printf("Error getting episode flag: %v", err)
+
 			return
 		}
 		config.UseEpisode = episode
 
+		force, err := cmd.Flags().GetBool("force")
+		if err != nil {
+			fmt.Printf("Error getting force flag: %v", err)
+
+			return
+		}
+		config.Force = force
+
+		output, err := cmd.Flags().GetString("output")
+		if err != nil {
+			fmt.Printf("Error getting output flag: %v", err)
+
+			return
+		}
+		config.Output = output
+
+		skip, err := cmd.Flags().GetBool("skip")
+		if err != nil {
+			fmt.Printf("Error getting skip flag: %v", err)
+
+			return
+		}
+		config.Skip = skip
+
 		err = download.Download(config)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
+
 			return
 		}
 	},

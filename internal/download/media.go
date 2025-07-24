@@ -1,4 +1,5 @@
-// Package download handles the downloading of videos and channels from SwitchTube.
+// Package download handles the downloading of videos and channels from
+// SwitchTube.
 package download
 
 import (
@@ -21,7 +22,7 @@ const (
 	channelPrefix       = "channels/"
 	headerAuthorization = "Authorization"
 
-	// Buffer size for reading data
+	// Buffer size for reading data.
 	bufferSizeKB = 32
 	bufferSize   = bufferSizeKB * 1024
 )

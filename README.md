@@ -5,12 +5,12 @@ to easily download videos from [SwitchTube](https://tube.switch.ch/).
 
 ## Getting Started
 
-<!-- TODO: Change link to actual release page -->
+1. **Download the binary**: Visit the [releases page](https://github.com/domi413/SwitchTube-Downloader/releases)
+   to obtain the appropriate binary for your operating system (Linux, MacOS,
+   Windows).
 
-1. **Download the binary**: Visit the [releases page](https://github.com/domi413/SwitchTube-Downloader)
-   to obtain the appropriate binary for your operating system (Linux, MacOS, Windows).
-
-2. **Make executable**: After downloading, ensure the binary is executable. For Linux and MacOS, run:
+2. **Make executable**: After downloading, ensure the binary is executable. For
+   Linux and MacOS, run:
 
    ```bash
    chmod +x switch-tube-downloader
@@ -22,25 +22,6 @@ to easily download videos from [SwitchTube](https://tube.switch.ch/).
 4. **Create access token**: A SwitchTube access token is required. Generate
    one [here](https://tube.switch.ch/access_tokens) to authenticate your
    requests.
-
-```
-./switch-tube-downloader
-A CLI downloader for SwitchTube videos
-
-Usage:
-  SwitchTube-Downloader [command]
-
-Available Commands:
-  download    Download a video or channel
-  help        Help about any command
-  token       Manage the SwitchTube access token
-  version     Print the version number of the SwitchTube downloader
-
-Flags:
-  -h, --help   help for SwitchTube-Downloader
-
-Use "SwitchTube-Downloader [command] --help" for more information about a command.
-```
 
 <details>
   <summary>[Click me] for detailed usage instructions</summary>
@@ -68,11 +49,13 @@ Use "SwitchTube-Downloader [command] --help" for more information about a comman
 
 ## Downloading a video or a channel
 
-To download a video or channel, use the `download` command with either the video/channel ID or its full URL:
+To download a video or channel, use the `download` command with either the
+video/channel ID or its full URL:
 
 <pre><code>./switch-tube-downloader download {id or url}</code></pre>
 
-For example, for the URL `https://tube.switch.ch/channels/dh0sX6Fj1I`, the ID is `dh0sX6Fj1I`. You can use either:
+For example, for the URL `https://tube.switch.ch/channels/dh0sX6Fj1I`, the ID is
+`dh0sX6Fj1I`. You can use either:
 
 - **URL**: More convenient, directly copied from the browser:
   <pre><code>./switch-tube-downloader download https://tube.switch.ch/channels/dh0sX6Fj1I</code></pre>
@@ -91,10 +74,12 @@ Usage:
 SwitchTube-Downloader download <id|url> [flags]
 
 Flags:
--a, --all       Download the whole content of a channel
--e, --episode   Prefixes the video with episode-number e.g. 01_OR_Mapping.mp4
--f, --force     Force overwrite if file already exist
--h, --help      help for download
+  -a, --all             Download the whole content of a channel
+  -e, --episode         Prefixes the video with episode-number e.g. 01_OR_Mapping.mp4
+  -f, --force           Force overwrite if file already exist
+  -h, --help            help for download
+  -o, --output string   Output directory for downloaded files
+  -s, --skip            Skip video if it already exists
 </code></pre>
 
 ### Using Flags
@@ -107,9 +92,38 @@ You can add optional flags to customize the download. For example:
 - Multiple flags combined:
   <pre><code>./switch-tube-downloader download dh0sX6Fj1I -a -f -e</code></pre>
 
+### Available Flags
+
+- `-a`, `--all`: Download all videos from a channel. This means that if you
+  provide a channel ID, it will download all videos in that channel. You can
+  also add this flag to a video ID, but with no effect.
+
+- `-e`, `--episode`: Prefixes the video filename with the episode number, e.g.,
+  `01_OR_Mapping.mp4`. This is useful for channels with multiple videos. So you
+  keep track of the order of the videos.
+
+- `-f`, `--force`: Forces the download to overwrite existing files. Use this
+  flag with caution, as it will replace any existing files without confirmation.
+
+- `-h`, `--help`: Displays help information for the `download` command. Running
+  a command without a flag, e.g. `./switch-tube-downloader download` will
+  automatically trigger the help menu.
+
+- `-o`, `--output`: Specifies the output directory for downloaded files. Per
+  default the current working directory is used (cwd). If you want to change the
+  output directory you can pass the path like this:
+  - Absolute path: `./switch-tube-downloader download dh0sX6Fj1I -o /path/to/dir`
+  - Relative path:
+    - Current dir: `./switch-tube-downloader download dh0sX6Fj1I -o ./path/to/dir`
+    - Parent dir: `./switch-tube-downloader download dh0sX6Fj1I -o ../path/to/dir`
+
+- `-s`, `--skip`: Skips the download if the video already exists in the output
+  directory. This is useful to avoid re-downloading videos.
+
 ## Managing access token
 
-The `token` command manages the SwitchTube access token stored in the system keyring:
+The `token` command manages the SwitchTube access token stored in the system
+keyring:
 
 <pre><code>
 ./switch-tube-downloader token
@@ -130,13 +144,16 @@ Flags:
 Use "SwitchTube-Downloader token [command] --help" for more information about a command.
 </code></pre>
 
-**Note**: The `delete` subcommand removes the token without a confirmation prompt, so use it carefully.
+**Note**: The `delete` subcommand removes the token without a confirmation
+prompt, so use it carefully.
 
 </details>
 
 ## Why to choose (this) SwitchTube-Downloader?
 
-While other tools exist for downloading SwitchTube content, **SwitchTube-Downloader** stands out for its user-friendly interface, and advanced features. Here’s how it compares:
+While other tools exist for downloading SwitchTube content,
+**SwitchTube-Downloader** stands out for its user-friendly interface, and
+advanced features. Here’s how it compares:
 
 | Feature                        | [SwitchTube-Downloader](https://github.com/domi413/SwitchTube-Downloader) | [switchtube-dl](https://github.com/panmona/switchtube-dl) | [switchtube-rs](https://github.com/jeremystucki/switchtube-rs) |
 | ------------------------------ | ------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------- |
@@ -149,18 +166,10 @@ While other tools exist for downloading SwitchTube content, **SwitchTube-Downloa
 | **Select videos of a channel** | Supported ✅                                                              | Supported ✅                                              | Not supported                                                  |
 | **Support ID and URL**         | Supported ✅                                                              | Not supported                                             | Not supported                                                  |
 
-Honorable mention: There is yet another SwitchTube downloader also written in go: [switchdl](https://github.com/Erl-koenig/switchdl)
+Honorable mention: There is yet another SwitchTube downloader also written in
+go: [switchdl](https://github.com/Erl-koenig/switchdl)
 
 ## FAQ
-
-> Why is there no option to define the output directory?
-
-Too many flags can make a command-line tool cumbersome. The current design
-focuses on simplicity and ease of use. Also providing a `-o` or `--output` which
-could be passed e.g., `switch-tube-downloader download dh0sX6Fj1I -o /path/to/dir`
-will result in a complex command structure, which is not user-friendly.
-
-Though, if there is a strong demand for this feature, I might consider adding it.
 
 > Can we select the video quality?
 
@@ -170,7 +179,8 @@ use the highest quality available anyway.
 
 ## Testing the SwitchTube API
 
-For developers or curious users, you can interact directly with the SwitchTube API using the following command:
+For developers or curious users, you can interact directly with the SwitchTube
+API using the following command:
 
 ```bash
 curl -H "Authorization: Token {your_token}" \

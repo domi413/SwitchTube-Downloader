@@ -1,3 +1,4 @@
+// Package file provides functions to create video files and channel folders.
 package file
 
 import (
@@ -92,7 +93,8 @@ func createFilename(title string, mediaType string, episodeNr string, useEpisode
 	return filepath.Clean(filename)
 }
 
-// sanitizeFilename removes or replaces characters that are invalid in filenames.
+// sanitizeFilename removes or replaces characters that are invalid in
+// filenames.
 func sanitizeFilename(filename string) string {
 	replacements := map[string]string{
 		"/":  "-",
