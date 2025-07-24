@@ -1,24 +1,53 @@
 name: PR Labeler
-
 on:
   pull_request:
     types:
-      - edited
       - opened
+      - edited
       - synchronize
 
 jobs:
   labeler:
     runs-on: ubuntu-latest
-    timeout-minutes: 1
     permissions:
       contents: read
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/labeler@v5
+      - uses: actions/github-script@v6
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          configuration-path: ".github/labeler.yaml"
-          sync-labels: true
+          script: |
+            const prTitle = context.payload.pull_request.title;
+
+            // Define regex pattern and corresponding labels
+            const patterns = {
+              '^fix': 'bug',
+              '^feat': 'enhancement',
+              '^pipeline': 'pipeline',
+              '^doc': 'documentation',
+              '^wip': 'wip',
+              '^test': 'enhancement'
+            };
+
+            let labelsToAdd = [];
+
+            // Check which pattern matches the PR title
+            for (const [pattern, label] of Object.entries(patterns)) {
+              if (new RegExp(pattern, 'i').test(prTitle)) {
+                labelsToAdd.push(label);
+                break; // Only apply the first matching label
+              }
+            }
+
+            if (labelsToAdd.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: labelsToAdd
+              });
+
+              console.log(`Added labels: ${labelsToAdd.join(', ')}`);
+            } else {
+              console.log('No matching label pattern found in PR title');
+            }
