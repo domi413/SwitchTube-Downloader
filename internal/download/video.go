@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"switch-tube-downloader/internal/helper/file"
+	"switch-tube-downloader/internal/helper/dir"
 	"switch-tube-downloader/internal/helper/ui"
 	"switch-tube-downloader/internal/models"
 )
@@ -54,14 +54,15 @@ func downloadVideo(
 		return fmt.Errorf("%w: %w", errFailedGetVideoVariants, err)
 	}
 
-	file, err := file.CreateVideoFile(
+	file, err := dir.CreateVideoFile(
 		videoData.Title,
 		variants[0].MediaType,
 		videoData.Episode,
-		config.UseEpisode,
-		config.Force,
+		config,
 	)
-	if err != nil {
+	if errors.Is(err, dir.ErrFileCreationAborted) {
+		return fmt.Errorf("%w", dir.ErrFileCreationAborted)
+	} else if err != nil {
 		return fmt.Errorf("%w: %w", errFailedToCreateVideoFile, err)
 	}
 

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"switch-tube-downloader/internal/helper/dir"
 	"switch-tube-downloader/internal/models"
 	token "switch-tube-downloader/internal/token"
 )
@@ -22,7 +23,7 @@ const (
 	channelPrefix       = "channels/"
 	headerAuthorization = "Authorization"
 
-	// Buffer size for reading data.
+	// Buffer size for reading data
 	bufferSizeKB = 32
 	bufferSize   = bufferSizeKB * 1024
 )
@@ -64,8 +65,10 @@ func Download(config models.DownloadConfig) error {
 		}
 	case unknownType:
 		err = downloadVideo(id, token, 1, 1, config)
-		if err == nil {
-			return nil
+		if errors.Is(err, dir.ErrCreateFile) {
+			return fmt.Errorf("%w", err)
+		} else if err != nil {
+			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 		}
 
 		fallthrough

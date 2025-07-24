@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"switch-tube-downloader/internal/helper/file"
+	"switch-tube-downloader/internal/helper/dir"
 	"switch-tube-downloader/internal/helper/ui"
 	"switch-tube-downloader/internal/models"
 )
@@ -57,10 +57,12 @@ func downloadChannel(channelID string, token string, config models.DownloadConfi
 		return nil
 	}
 
-	folderName, err := file.CreateChannelFolder(channelInfo.Name)
+	folderName, err := dir.CreateChannelFolder(channelInfo.Name, config)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedToCreateChannelFolder, err)
 	}
+
+	config.Output = folderName
 
 	fmt.Printf("Downloading to folder: %s\n", folderName)
 	downloadSelectedVideos(videos, selectedIndices, token, config)
@@ -81,7 +83,7 @@ func downloadSelectedVideos(
 		video := videos[videoIndex]
 
 		err := downloadVideo(video.ID, token, i+1, len(selectedIndices), config)
-		if err != nil {
+		if err != nil && !errors.Is(err, dir.ErrFileCreationAborted) {
 			fmt.Printf("\nFailed: %s - %v\n", video.Title, err)
 			failed = append(failed, video.Title)
 		}

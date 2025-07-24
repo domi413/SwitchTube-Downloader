@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -69,7 +70,7 @@ var downloadCmd = &cobra.Command{
 			Skip:       skip,
 			Force:      force,
 			All:        all,
-			Output:     output,
+			Output:     strings.TrimSpace(output),
 		}
 
 		err = download.Download(config)

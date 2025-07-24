@@ -104,6 +104,8 @@ You can add optional flags to customize the download. For example:
 
 - `-f`, `--force`: Forces the download to overwrite existing files. Use this
   flag with caution, as it will replace any existing files without confirmation.
+  Force has also precedence over the `--skip` flag, meaning that if you use both
+  flags, the file will be overwritten.
 
 - `-h`, `--help`: Displays help information for the `download` command. Running
   a command without a flag, e.g. `./switch-tube-downloader download` will
@@ -114,7 +116,9 @@ You can add optional flags to customize the download. For example:
   output directory you can pass the path like this:
   - Absolute path: `./switch-tube-downloader download dh0sX6Fj1I -o /path/to/dir`
   - Relative path:
-    - Current dir: `./switch-tube-downloader download dh0sX6Fj1I -o ./path/to/dir`
+    - Current dir:
+      - `./switch-tube-downloader download dh0sX6Fj1I -o path/to/dir`
+      - `./switch-tube-downloader download dh0sX6Fj1I -o ./path/to/dir`
     - Parent dir: `./switch-tube-downloader download dh0sX6Fj1I -o ../path/to/dir`
 
 - `-s`, `--skip`: Skips the download if the video already exists in the output
