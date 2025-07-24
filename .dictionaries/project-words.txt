@@ -1,4 +1,10 @@
 # Add here words that are not recognized by the spellchecker but are correct
+Bühler
+Dominik
 domi
+pkgdesc
+pkgname
+pkgrel
+pkgver
 switchdl
 switchtube
