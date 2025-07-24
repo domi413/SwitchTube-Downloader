@@ -1,9 +1,13 @@
 ### TODO's
 
 - Pipeline:
-  - [ ] Release for all os'es
+  - [x] Release for all os'es
     - [ ] AUR
-    - [ ] Homebrew
+    - ~[ ] Homebrew~
+    - [ ] Fix changelog
+      - [ ] fix double header
+      - [ ] fix missing author name
+      - [ ] strip type if possible
 - [ ] use better progressbar
 - [ ] double overwrite ui bug
 - [ ] clean up download/

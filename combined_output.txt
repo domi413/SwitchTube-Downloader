@@ -1,0 +1,1169 @@
+./main.go:
+// Package main provides the entry point for the SwitchTube downloader CLI application.
+package main
+
+import (
+	"switch-tube-downloader/cmd"
+)
+
+// main is the entry point of the SwitchTube downloader application.
+func main() {
+	cmd.Execute()
+}
+
+
+./internal/download/channel.go:
+package download
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
+
+	helper "switch-tube-downloader/internal/helper"
+	models "switch-tube-downloader/internal/models"
+)
+
+// channelInfo represents channel metadata.
+type channelInfo struct {
+	Name string `json:"name"`
+}
+
+var (
+	errFailedSelectVideos      = errors.New("failed to select videos")
+	errFailedGetChannelVideos  = errors.New("failed to get channel videos")
+	errFailedDecodeChannelVids = errors.New("failed to decode channel videos")
+	errFailedGetChannelInfo    = errors.New("failed to get channel information")
+	errFailedDecodeChannelMeta = errors.New("failed to decode channel metadata")
+)
+
+// downloadChannel downloads selected videos from a channel.
+func downloadChannel(channelID string, token string, useEpisode bool, force bool, all bool) error {
+	channelInfo, err := getChannelInfo(channelID, token)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedGetChannelInfo, err)
+	}
+
+	videos, err := getChannelVideos(channelID, token)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedGetChannelVideos, err)
+	}
+
+	if len(videos) == 0 {
+		fmt.Println("No videos found in this channel")
+
+		return nil
+	}
+
+	fmt.Printf("Found %d videos in channel\n", len(videos))
+
+	selectedIndices, err := helper.SelectVideos(videos, all)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedSelectVideos, err)
+	}
+
+	if len(selectedIndices) == 0 {
+		fmt.Println("No videos selected for download")
+
+		return nil
+	}
+
+	folderName, err := helper.CreateChannelFolder(channelInfo.Name)
+	if err != nil {
+		return err
+	}
+
+	cleanup, err := helper.ChangeDirToFolder(folderName)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	fmt.Printf("Downloading to folder: %s\n", folderName)
+	downloadSelectedVideos(videos, selectedIndices, token, useEpisode, force)
+
+	return nil
+}
+
+// downloadSelectedVideos downloads the selected videos and reports results.
+func downloadSelectedVideos(
+	videos []models.Video,
+	selectedIndices []int,
+	token string,
+	useEpisode bool,
+	force bool,
+) {
+	var failed []string
+
+	for i, videoIndex := range selectedIndices {
+		video := videos[videoIndex]
+
+		err := downloadVideo(video.ID, token, i+1, len(selectedIndices), useEpisode, force)
+		if err != nil {
+			fmt.Printf("\nFailed: %s - %v\n", video.Title, err)
+			failed = append(failed, video.Title)
+		}
+	}
+
+	fmt.Printf("\nDownload complete! %d/%d videos successful\n",
+		len(selectedIndices)-len(failed), len(selectedIndices))
+
+	if len(failed) > 0 {
+		fmt.Println("Failed downloads:")
+
+		for _, title := range failed {
+			fmt.Printf("  - %s\n", title)
+		}
+	}
+}
+
+// getChannelVideos retrieves all videos from a channel.
+func getChannelVideos(channelID, token string) ([]models.Video, error) {
+	fullURL, err := url.JoinPath(baseURL, channelAPI, channelID, "videos")
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
+	}
+
+	resp, err := makeRequest(fullURL, token)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
+	}
+
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
+	}
+
+	var videos []models.Video
+
+	err = json.NewDecoder(resp.Body).Decode(&videos)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedDecodeChannelVids, err)
+	}
+
+	return videos, nil
+}
+
+// getChannelInfo retrieves channel metadata from the API.
+func getChannelInfo(channelID, token string) (*channelInfo, error) {
+	fullURL, err := url.JoinPath(baseURL, channelAPI, channelID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
+	}
+
+	resp, err := makeRequest(fullURL, token)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
+	}
+
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
+	}
+
+	var channelData channelInfo
+
+	err = json.NewDecoder(resp.Body).Decode(&channelData)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedDecodeChannelMeta, err)
+	}
+
+	return &channelData, nil
+}
+
+
+./internal/download/video.go:
+package download
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
+	"time"
+
+	helper "switch-tube-downloader/internal/helper"
+	models "switch-tube-downloader/internal/models"
+)
+
+const minMediaTypeParts = 2
+
+// videoVariant represents a video download variant.
+type videoVariant struct {
+	Path      string `json:"path"`
+	MediaType string `json:"mediaType"`
+}
+
+var (
+	errNoVariantsFound        = errors.New("no video variants found")
+	errFailedDecodeVariants   = errors.New("failed to decode variants")
+	errFailedGetVideoVariants = errors.New("failed to get video variants")
+	errFailedGetVideoInfo     = errors.New("failed to get video information")
+	errFailedDecodeVideoMeta  = errors.New("failed to decode video metadata")
+)
+
+// downloadVideo downloads a video.
+func downloadVideo(
+	videoID string,
+	token string,
+	currentItem int,
+	totalItems int,
+	useEpisode bool,
+	force bool,
+) error {
+	videoData, err := getVideoMetadata(videoID, token)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedGetVideoInfo, err)
+	}
+
+	variants, err := getVideoVariants(videoID, token)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedGetVideoVariants, err)
+	}
+
+	filename := helper.CreateFilename(
+		videoData.Title,
+		variants[0].MediaType,
+		videoData.Episode,
+		useEpisode,
+	)
+
+	file, err := helper.CreateFile(filename, force)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			fmt.Printf("Warning: failed to close file %s: %v\n", filename, err)
+		}
+	}()
+
+	// Download the video
+	err = downloadProcess(variants[0].Path, token, file, filename, currentItem, totalItems)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
+	}
+
+	return nil
+}
+
+// getVideoMetadata retrieves video metadata from the API.
+func getVideoMetadata(videoID, token string) (*models.Video, error) {
+	fullURL, err := url.JoinPath(baseURL, videoAPI, videoID)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
+	}
+
+	resp, err := makeRequest(fullURL, token)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
+	}
+
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
+	}
+
+	var videoData models.Video
+
+	err = json.NewDecoder(resp.Body).Decode(&videoData)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedDecodeVideoMeta, err)
+	}
+
+	return &videoData, nil
+}
+
+// getVideoVariants retrieves available video variants from the API.
+func getVideoVariants(videoID, token string) ([]videoVariant, error) {
+	fullURL, err := url.JoinPath(baseURL, videoAPI, videoID, "video_variants")
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
+	}
+
+	resp, err := makeRequest(fullURL, token)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
+	}
+
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
+	}
+
+	var variants []videoVariant
+
+	err = json.NewDecoder(resp.Body).Decode(&variants)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedDecodeVariants, err)
+	}
+
+	if len(variants) == 0 {
+		return nil, errNoVariantsFound
+	}
+
+	return variants, nil
+}
+
+// downloadProcess handles the actual file download.
+func downloadProcess(endpoint string, token string, out *os.File, filename string, currentItem int, totalItems int) error {
+	fullURL, err := url.JoinPath(baseURL, endpoint)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedConstructURL, err)
+	}
+
+	resp, err := makeRequest(fullURL, token)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
+	}
+
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf(
+			"%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
+	}
+
+	err = copyWithProgress(resp.Body, out, resp.ContentLength, filename, currentItem, totalItems)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedCopyVideoData, err)
+	}
+
+	return nil
+}
+
+// TODO: Do we really need this function?
+// copyWithProgress copies data from src to dst while showing download progress.
+func copyWithProgress(
+	src io.Reader,
+	dst io.Writer,
+	total int64,
+	filename string,
+	currentItem, totalItems int,
+) error {
+	buffer := make([]byte, bufferSize)
+
+	var written int64
+
+	startTime := time.Now()
+
+	for {
+		n, err := src.Read(buffer)
+		if n > 0 {
+			_, writeErr := dst.Write(buffer[:n])
+			if writeErr != nil {
+				return fmt.Errorf("%w: %w", errFailedWriteToFile, writeErr)
+			}
+
+			written += int64(n)
+			helper.ShowProgress(written, total, filename, currentItem, totalItems, startTime)
+		}
+
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return fmt.Errorf("%w: %w", errFailedReadData, err)
+		}
+	}
+
+	helper.ShowProgress(written, total, filename, currentItem, totalItems, startTime)
+
+	return nil
+}
+
+
+./internal/download/media.go:
+// Package download handles the downloading of videos and channels from SwitchTube.
+package download
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+
+	token "switch-tube-downloader/internal/token"
+)
+
+const (
+	// Base URL and API endpoints for SwitchTube.
+	baseURL             = "https://tube.switch.ch/"
+	videoAPI            = "api/v1/browse/videos/"
+	channelAPI          = "api/v1/browse/channels/"
+	videoPrefix         = "videos/"
+	channelPrefix       = "channels/"
+	headerAuthorization = "Authorization"
+
+	// Buffer size for reading data
+	bufferSizeKB = 32
+	bufferSize   = bufferSizeKB * 1024
+)
+
+type mediaType int
+
+const (
+	unknownType mediaType = iota
+	videoType
+	channelType
+)
+
+var (
+	errInvalidURL              = errors.New("invalid url")
+	errFailedToGetToken        = errors.New("failed to get token")
+	errFailedReadData          = errors.New("failed to read data")
+	errFailedToExtractType     = errors.New("failed to extract type")
+	errFailedWriteToFile       = errors.New("failed to write to file")
+	errFailedConstructURL      = errors.New("failed to construct URL")
+	errFailedToDownloadVideo   = errors.New("failed to download video")
+	errFailedCopyVideoData     = errors.New("failed to copy video data")
+	errFailedToDownloadChannel = errors.New("failed to download channel")
+	errFailedFetchVideoStream  = errors.New("failed to fetch video stream")
+	errHTTPNotOK               = errors.New("HTTP request failed with non-OK status")
+	errCouldNotDetermineType   = errors.New("could not determine if channel or video")
+)
+
+// Download downloads a video or a channel.
+func Download(media string, useEpisode bool, force bool, all bool) error {
+	id, downloadType, err := extractIDAndType(media)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedToExtractType, err)
+	}
+
+	token, err := token.Get()
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedToGetToken, err)
+	}
+
+	switch downloadType {
+	case videoType:
+		err = downloadVideo(id, token, 1, 1, useEpisode, force)
+		if err != nil {
+			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
+		}
+	case unknownType:
+		err = downloadVideo(id, token, 1, 1, useEpisode, force)
+		if err == nil {
+			return nil
+		}
+
+		fallthrough
+	case channelType:
+		err = downloadChannel(id, token, useEpisode, force, all)
+		if err != nil {
+			return fmt.Errorf("%w: %w", errFailedToDownloadChannel, err)
+		}
+	default:
+		return errCouldNotDetermineType
+	}
+
+	return nil
+}
+
+// extractIDAndType extracts the id and determines if it's a video or channel.
+func extractIDAndType(input string) (string, mediaType, error) {
+	input = strings.TrimSpace(input)
+
+	// If input doesn't start with baseURL, return as unknown type
+	// This is the case if the Id was passed as an argument
+	if !strings.HasPrefix(input, baseURL) {
+		return input, unknownType, nil
+	}
+
+	switch prefixAndID := strings.TrimPrefix(input, baseURL); {
+	case strings.HasPrefix(prefixAndID, videoPrefix):
+		return strings.TrimPrefix(prefixAndID, videoPrefix), videoType, nil
+	case strings.HasPrefix(prefixAndID, channelPrefix):
+		return strings.TrimPrefix(prefixAndID, channelPrefix), channelType, nil
+	default:
+		return prefixAndID, unknownType, errInvalidURL
+	}
+}
+
+// makeRequest makes an authenticated HTTP request.
+func makeRequest(url string, token string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set(headerAuthorization, "Token "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+
+	return resp, nil
+}
+
+
+./internal/models/video.go:
+package models
+
+// Video represents a Video.
+type Video struct {
+	ID      string `json:"id"`
+	Title   string `json:"title"`
+	Episode string `json:"episode"`
+}
+
+
+./internal/helper/progressbar.go:
+package helper
+
+import (
+	"fmt"
+	"strings"
+	"time"
+
+	"golang.org/x/term"
+)
+
+const (
+	// Progress bar display constants.
+	percentageMultiplier = 100
+	progressBarLength    = 50
+	bytesPerKB           = 1024
+	bytesPerMB           = 1024 * 1024
+	bitsPerByte          = 8
+)
+
+const (
+	// Terminal display constants.
+	defaultTerminalWidth   = 80
+	reservedSpace          = 40
+	terminalWidthPadding   = 30
+	minBarLength           = 10
+	minFilenameLength      = 10
+	truncationSuffix       = "..."
+	truncationSuffixLength = 3
+	stdinFileDescriptor    = 0
+)
+
+const (
+	// ANSI escape codes.
+	clearLine = "\r\x1b[2K"
+)
+
+// ShowProgress displays a progress bar for downloading.
+func ShowProgress(
+	written, total int64,
+	filename string,
+	currentItem, totalItems int,
+	startTime time.Time,
+) {
+	termWidth := getTerminalWidth()
+	percent := float64(written) / float64(total) * percentageMultiplier
+	barLength := calculateBarLength(termWidth)
+	bar := renderProgressBar(percent, barLength)
+	speed := calculateDownloadSpeed(written, startTime)
+	writtenMB, totalMB := formatFileSize(written, total)
+	truncatedFilename := truncateFilename(filename, termWidth, barLength)
+
+	progress := formatProgressMessage(
+		currentItem,
+		totalItems,
+		truncatedFilename,
+		bar,
+		writtenMB,
+		totalMB,
+		speed,
+	)
+	progress = truncateProgressMessage(progress, termWidth)
+
+	fmt.Printf("%s%s", clearLine, progress)
+}
+
+// getTerminalWidth returns the current terminal width or default if unavailable.
+func getTerminalWidth() int {
+	if term.IsTerminal(stdinFileDescriptor) {
+		width, _, err := term.GetSize(stdinFileDescriptor)
+		if err == nil {
+			return width
+		}
+	}
+
+	return defaultTerminalWidth
+}
+
+// calculateBarLength determines the appropriate progress bar length based on terminal width.
+func calculateBarLength(termWidth int) int {
+	barLength := progressBarLength
+	barLength = min(barLength, termWidth-terminalWidthPadding)
+	barLength = max(barLength, minBarLength)
+
+	return barLength
+}
+
+// renderProgressBar creates the visual progress bar string.
+func renderProgressBar(percent float64, barLength int) string {
+	filled := int(float64(barLength) * percent / percentageMultiplier)
+
+	return strings.Repeat("#", filled) + strings.Repeat("-", barLength-filled)
+}
+
+// calculateDownloadSpeed computes the download speed in Mb/s.
+func calculateDownloadSpeed(written int64, startTime time.Time) float64 {
+	elapsed := time.Since(startTime).Seconds()
+	if elapsed > 0 {
+		return float64(written) / elapsed / (bytesPerMB / bitsPerByte) // Mb/s
+	}
+
+	return 0
+}
+
+// formatFileSize converts bytes to MB for display.
+func formatFileSize(written, total int64) (float64, float64) {
+	writtenMB := float64(written) / bytesPerMB
+	totalMB := float64(total) / bytesPerMB
+
+	return writtenMB, totalMB
+}
+
+// truncateFilename shortens the filename if it's too long for the terminal.
+func truncateFilename(filename string, termWidth, barLength int) string {
+	maxFilenameLength := termWidth - barLength - reservedSpace
+	maxFilenameLength = max(maxFilenameLength, minFilenameLength)
+
+	if len(filename) > maxFilenameLength {
+		return filename[:maxFilenameLength-truncationSuffixLength] + truncationSuffix
+	}
+
+	return filename
+}
+
+// formatProgressMessage creates the complete progress message string.
+func formatProgressMessage(
+	currentItem, totalItems int,
+	filename, bar string,
+	writtenMB, totalMB, speed float64,
+) string {
+	return fmt.Sprintf(
+		"[%d/%d] Downloading: %s [%s] [%.0fMB/%.0fMB] (%.0f Mb/s)",
+		currentItem,
+		totalItems,
+		filename,
+		bar,
+		writtenMB,
+		totalMB,
+		speed,
+	)
+}
+
+// truncateProgressMessage ensures the progress message fits within terminal width.
+func truncateProgressMessage(progress string, termWidth int) string {
+	if len(progress) > termWidth {
+		maxLength := max(0, termWidth-truncationSuffixLength)
+
+		return progress[:maxLength] + truncationSuffix
+	}
+
+	return progress
+}
+
+
+./internal/helper/selector.go:
+package helper
+
+import (
+	"errors"
+	"fmt"
+	"sort"
+	"strconv"
+	"strings"
+
+	"switch-tube-downloader/internal/models"
+)
+
+const (
+	rangePartsCount = 2
+)
+
+var (
+	errInvalidRange           = errors.New("invalid range")
+	errInvalidNumber          = errors.New("invalid number")
+	errInvalidEndNumber       = errors.New("invalid end number")
+	errNumberOutOfRange       = errors.New("number out of range")
+	errInvalidRangeFormat     = errors.New("invalid range format")
+	errInvalidStartNumber     = errors.New("invalid start number")
+	errNoValidSelectionsFound = errors.New("no valid selections found")
+)
+
+// SelectVideos displays the video list and handles user selection.
+func SelectVideos(videos []models.Video, all bool) ([]int, error) {
+	// If --all flag is used, select all videos
+	if all {
+		indices := make([]int, len(videos))
+		for i := range indices {
+			indices[i] = i
+		}
+
+		return indices, nil
+	}
+
+	// Display video list
+	fmt.Println("\nAvailable videos:")
+
+	for i, video := range videos {
+		fmt.Printf("%d. %s\n", i+1, video.Title)
+	}
+
+	fmt.Println("\nSelect videos to download:")
+	fmt.Println("Examples: '1-12', '1,3,5', '1 3 5', or press Enter for all")
+
+	input := Input("Selection: ")
+	input = strings.TrimSpace(input)
+
+	// Empty input means select all
+	if input == "" {
+		indices := make([]int, len(videos))
+		for i := range indices {
+			indices[i] = i
+		}
+
+		return indices, nil
+	}
+
+	return ParseSelection(input, len(videos))
+}
+
+// ParseSelection parses user input and returns selected video indices.
+func ParseSelection(input string, maxVideos int) ([]int, error) {
+	var indices []int
+
+	seen := make(map[int]bool)
+
+	// Split by comma, space, or both
+	parts := strings.FieldsFunc(input, func(r rune) bool {
+		return r == ',' || r == ' '
+	})
+
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		// Handle range (e.g., "1-5")
+		if strings.Contains(part, "-") {
+			var err error
+
+			indices, err = handleRangePart(part, maxVideos, indices, seen)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			var err error
+
+			indices, err = handleSinglePart(part, maxVideos, indices, seen)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if len(indices) == 0 {
+		return nil, fmt.Errorf("%w", errNoValidSelectionsFound)
+	}
+
+	// Sort indices to maintain order
+	sort.Ints(indices)
+
+	return indices, nil
+}
+
+// handleRangePart processes a range selection like "1-5".
+func handleRangePart(part string, maxVideos int, indices []int, seen map[int]bool) ([]int, error) {
+	rangeParts := strings.Split(part, "-")
+	if len(rangeParts) != rangePartsCount {
+		return nil, fmt.Errorf("%w: %s", errInvalidRangeFormat, part)
+	}
+
+	start, err := strconv.Atoi(strings.TrimSpace(rangeParts[0]))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", errInvalidStartNumber, rangeParts[0])
+	}
+
+	end, err := strconv.Atoi(strings.TrimSpace(rangeParts[1]))
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", errInvalidEndNumber, rangeParts[1])
+	}
+
+	if start < 1 || end > maxVideos || start > end {
+		return nil, fmt.Errorf("%w: %d-%d (must be 1-%d)", errInvalidRange, start, end, maxVideos)
+	}
+
+	for i := start; i <= end; i++ {
+		index := i - 1
+		if !seen[index] {
+			indices = append(indices, index)
+			seen[index] = true
+		}
+	}
+
+	return indices, nil
+}
+
+// handleSinglePart processes a single number selection.
+func handleSinglePart(part string, maxVideos int, indices []int, seen map[int]bool) ([]int, error) {
+	num, err := strconv.Atoi(part)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", errInvalidNumber, part)
+	}
+
+	if num < 1 || num > maxVideos {
+		return nil, fmt.Errorf("%w: %d (must be 1-%d)", errNumberOutOfRange, num, maxVideos)
+	}
+
+	index := num - 1
+	if !seen[index] {
+		indices = append(indices, index)
+		seen[index] = true
+	}
+
+	return indices, nil
+}
+
+
+./internal/helper/prompt.go:
+package helper
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+)
+
+// Input prompts the user for input and returns the entered string.
+func Input(prompt string) string {
+	fmt.Print(prompt)
+
+	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+
+	return strings.TrimSpace(input)
+}
+
+// Confirm prompts the user for a yes/no confirmation and returns true for yes.
+func Confirm(format string, args ...any) bool {
+	prompt := fmt.Sprintf(format, args...)
+	response := Input(prompt + " (y/N): ")
+	response = strings.ToLower(strings.TrimSpace(response))
+
+	return response == "y" || response == "yes"
+}
+
+
+./internal/helper/createdir.go:
+package helper
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+const (
+	// File and directory permissions.
+	dirPermissions = 0o744
+
+	minMediaTypeParts = 2
+)
+
+var (
+	errFailedCreateFolder    = errors.New("failed to create folder")
+	errFailedChangeDirectory = errors.New("failed to change directory")
+	errFileCreationAborted   = errors.New("file creation aborted")
+)
+
+// CreateChannelFolder creates a download folder using the channel name.
+func CreateChannelFolder(channelName string) (string, error) {
+	folderName := strings.ReplaceAll(channelName, "/", " - ")
+	folderName = filepath.Clean(folderName)
+
+	err := os.MkdirAll(folderName, dirPermissions)
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", errFailedCreateFolder, err)
+	}
+
+	return folderName, nil
+}
+
+// ChangeDirToFolder changes the directory to the specified folder and returns a
+// cleanup function.
+func ChangeDirToFolder(folderName string) (func(), error) {
+	originalDir, _ := os.Getwd()
+
+	err := os.Chdir(folderName)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedChangeDirectory, err)
+	}
+
+	cleanup := func() {
+		err := os.Chdir(originalDir)
+		if err != nil {
+			fmt.Printf(
+				"Warning: failed to change back to original directory %s: %v\n",
+				originalDir,
+				err,
+			)
+		}
+	}
+
+	return cleanup, nil
+}
+
+// CreateFile creates a file with the given name, handling overwrites based on force flag.
+func CreateFile(filename string, force bool) (*os.File, error) {
+	_, err := os.Stat(filename)
+	if !os.IsNotExist(err) && !force {
+		if !Confirm("File %s already exists. Overwrite?", filename) {
+			return nil, fmt.Errorf("%w", errFileCreationAborted)
+		}
+	}
+
+	file, err := os.Create(filepath.Clean(filename))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create file: %w", err)
+	}
+
+	return file, nil
+}
+
+// sanitizeFilename removes or replaces characters that are invalid in filenames.
+func sanitizeFilename(filename string) string {
+	replacements := map[string]string{
+		"/":  "-",
+		"\\": "-",
+		":":  "-",
+		"*":  "",
+		"?":  "",
+		"\"": "",
+		"<":  "",
+		">":  "",
+		"|":  "-",
+	}
+
+	sanitized := filename
+	for invalid, replacement := range replacements {
+		sanitized = strings.ReplaceAll(sanitized, invalid, replacement)
+	}
+
+	sanitized = strings.TrimSpace(sanitized)
+	for strings.Contains(sanitized, "--") {
+		sanitized = strings.ReplaceAll(sanitized, "--", "-")
+	}
+
+	return sanitized
+}
+
+// CreateFilename creates a sanitized filename from video title and media type.
+func CreateFilename(title string, mediaType string, episodeNr string, useEpisode bool) string {
+	// Extract extension from media type (e.g., "video/mp4" -> "mp4")
+	parts := strings.Split(mediaType, "/")
+
+	extension := "mp4" // default fallback
+	if len(parts) >= minMediaTypeParts {
+		extension = parts[1]
+	}
+
+	sanitizedTitle := sanitizeFilename(title)
+	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, " ", "_")
+
+	// Add episode prefix if episode flag is set
+	var filename string
+	if useEpisode && episodeNr != "" {
+		filename = fmt.Sprintf("%s_%s.%s", episodeNr, sanitizedTitle, extension)
+	} else {
+		filename = fmt.Sprintf("%s.%s", sanitizedTitle, extension)
+	}
+
+	return filepath.Clean(filename)
+}
+
+
+./internal/token/token.go:
+// Package token provides functionality for managing access tokens to
+// authenticate with SwitchTube
+package token
+
+import (
+	"errors"
+	"fmt"
+	"os/user"
+
+	"switch-tube-downloader/internal/prompt"
+
+	"github.com/zalando/go-keyring"
+)
+
+const (
+	serviceName          = "SwitchTube"
+	createAccessTokenURL = "https://tube.switch.ch/access_tokens"
+)
+
+var (
+	// ErrTokenAlreadyExists is returned when trying to set a token that already
+	// exists in the keyring.
+	ErrTokenAlreadyExists = errors.New("token already exists in keyring")
+
+	errTokenEmpty         = errors.New("token cannot be empty")
+	errNoTokenFoundDelete = errors.New("no token found in keyring")
+	errFailedToGetUser    = errors.New("failed to get current user")
+	errUnableToCreate     = errors.New("unable to create access token")
+	errFailedToStore      = errors.New("failed to store token in keyring")
+	errFailedToDelete     = errors.New("failed to delete token from keyring")
+	errFailedToRetrieve   = errors.New("failed to retrieve token from keyring")
+	errNoTokenFound       = errors.New("no token found in keyring - run 'token set' first")
+)
+
+// Get retrieves the access token from the system keyring.
+func Get() (string, error) {
+	userName, err := user.Current()
+	if err != nil {
+		return "", fmt.Errorf("%w: %w", errFailedToGetUser, err)
+	}
+
+	token, err := keyring.Get(serviceName, userName.Username)
+	if err != nil {
+		if errors.Is(err, keyring.ErrNotFound) {
+			return "", errNoTokenFound
+		}
+
+		return "", fmt.Errorf("%w: %w", errFailedToRetrieve, err)
+	}
+
+	return token, nil
+}
+
+// Set creates and stores a new access token in the system keyring.
+func Set() error {
+	// Check if token already exists
+	existingToken, err := Get()
+	if err == nil && existingToken != "" {
+		fmt.Println("Token already exists in keyring")
+
+		if !prompt.Confirm("Do you want to replace it?") {
+			fmt.Println("Operation cancelled")
+
+			return fmt.Errorf("%w", ErrTokenAlreadyExists)
+		}
+	}
+
+	token, err := create()
+	if err != nil {
+		return fmt.Errorf("%w: %w", errUnableToCreate, err)
+	}
+
+	userName, err := user.Current()
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedToGetUser, err)
+	}
+
+	err = keyring.Set(serviceName, userName.Username, token)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedToStore, err)
+	}
+
+	return nil
+}
+
+// Delete removes the access token from the system keyring.
+func Delete() error {
+	userName, err := user.Current()
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedToGetUser, err)
+	}
+
+	err = keyring.Delete(serviceName, userName.Username)
+	if err != nil {
+		if errors.Is(err, keyring.ErrNotFound) {
+			return fmt.Errorf("%w for %s", errNoTokenFoundDelete, serviceName)
+		}
+
+		return fmt.Errorf("%w: %w", errFailedToDelete, err)
+	}
+
+	return nil
+}
+
+// create prompts the user to visit the access token creation URL and enter a new token.
+func create() (string, error) {
+	fmt.Printf("Please visit: %s\n", createAccessTokenURL)
+	fmt.Printf("Create a new access token and paste it below\n\n")
+
+	token := prompt.Input("Enter your access token: ")
+	if token == "" {
+		return "", errTokenEmpty
+	}
+
+	return token, nil
+}
+
+

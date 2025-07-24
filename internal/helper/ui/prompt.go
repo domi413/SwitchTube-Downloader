@@ -1,6 +1,4 @@
-// Package prompt provides utility functions for prompting the user for input
-// from the command line.
-package prompt
+package ui
 
 import (
 	"bufio"

@@ -3,9 +3,10 @@ package cmd
 import (
 	"fmt"
 
-	download "switch-tube-downloader/internal/download"
-
 	"github.com/spf13/cobra"
+
+	"switch-tube-downloader/internal/download"
+	"switch-tube-downloader/internal/models"
 )
 
 // init initializes the download command and adds it to the root command with
@@ -25,33 +26,34 @@ var downloadCmd = &cobra.Command{
 		"You can also pass the whole URL instead of the ID for convenience.",
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		id := args[0]
+		config := models.DownloadConfig{
+			Media: args[0],
+		}
 
 		force, err := cmd.Flags().GetBool("force")
 		if err != nil {
 			fmt.Printf("Error getting force flag: %v", err)
-
 			return
 		}
+		config.Force = force
 
 		all, err := cmd.Flags().GetBool("all")
 		if err != nil {
 			fmt.Printf("Error getting all flag: %v", err)
-
 			return
 		}
+		config.All = all
 
 		episode, err := cmd.Flags().GetBool("episode")
 		if err != nil {
 			fmt.Printf("Error getting episode flag: %v", err)
-
 			return
 		}
+		config.UseEpisode = episode
 
-		err = download.Download(id, episode, force, all)
+		err = download.Download(config)
 		if err != nil {
 			fmt.Printf("Error: %v\n", err)
-
 			return
 		}
 	},
