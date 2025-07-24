@@ -31,3 +31,6 @@ go.work.sum
 
 # Binary
 switch-tube-downloader
+
+# Others
+create_single_file.py

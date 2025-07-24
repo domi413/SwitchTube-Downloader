@@ -1,3 +1,4 @@
+// Package models defines the structures used in the application.
 package models
 
 // DownloadConfig holds configuration options for the Download function.
