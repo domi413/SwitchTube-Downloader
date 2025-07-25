@@ -2,7 +2,7 @@
 package main
 
 import (
-	"switch-tube-downloader/cmd"
+	"switchtube-downloader/cmd"
 )
 
 // main is the entry point of the SwitchTube downloader application.

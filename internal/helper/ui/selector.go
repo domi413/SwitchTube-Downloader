@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"switch-tube-downloader/internal/models"
+	"switchtube-downloader/internal/models"
 )
 
 const rangePartsCount = 2

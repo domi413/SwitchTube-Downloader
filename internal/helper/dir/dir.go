@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"switch-tube-downloader/internal/helper/ui"
-	"switch-tube-downloader/internal/models"
+	"switchtube-downloader/internal/helper/ui"
+	"switchtube-downloader/internal/models"
 )
 
 const (

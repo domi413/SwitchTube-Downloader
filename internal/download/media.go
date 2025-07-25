@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"strings"
 
-	"switch-tube-downloader/internal/helper/dir"
-	"switch-tube-downloader/internal/models"
-	token "switch-tube-downloader/internal/token"
+	"switchtube-downloader/internal/helper/dir"
+	"switchtube-downloader/internal/models"
+	token "switchtube-downloader/internal/token"
 )
 
 const (

@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"switch-tube-downloader/internal/download"
-	"switch-tube-downloader/internal/models"
+	"switchtube-downloader/internal/download"
+	"switchtube-downloader/internal/models"
 )
 
 // init initializes the download command and adds it to the root command with

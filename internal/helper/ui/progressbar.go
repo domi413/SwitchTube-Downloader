@@ -16,9 +16,9 @@ const (
 	etaSmoothingFactor = 30
 )
 
-// CreateProgressBar sets up a progress bar for downloading and copies data from
+// ProgressBar sets up a progress bar for downloading and copies data from
 // src to dst.
-func CreateProgressBar(
+func ProgressBar(
 	src io.Reader,
 	dst io.Writer,
 	total int64,

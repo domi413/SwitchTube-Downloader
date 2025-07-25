@@ -8,9 +8,9 @@ import (
 	"net/url"
 	"os"
 
-	"switch-tube-downloader/internal/helper/dir"
-	"switch-tube-downloader/internal/helper/ui"
-	"switch-tube-downloader/internal/models"
+	"switchtube-downloader/internal/helper/dir"
+	"switchtube-downloader/internal/helper/ui"
+	"switchtube-downloader/internal/models"
 )
 
 // videoVariant represents a video download variant.
@@ -186,7 +186,7 @@ func downloadProcess(
 		)
 	}
 
-	err = ui.CreateProgressBar(
+	err = ui.ProgressBar(
 		resp.Body,
 		file,
 		resp.ContentLength,

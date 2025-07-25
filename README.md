@@ -13,10 +13,10 @@ to easily download videos from [SwitchTube](https://tube.switch.ch/).
    Linux and MacOS, run:
 
    ```bash
-   chmod +x switch-tube-downloader
+   chmod +x switchtube-downloader
    ```
 
-3. **Usage**: Run `./switch-tube-downloader` to access the help menu,
+3. **Usage**: Run `./switchtube-downloader` to access the help menu,
    which provides clear guidance on available commands.
 
 4. **Create access token**: A SwitchTube access token is required. Generate
@@ -29,7 +29,7 @@ to easily download videos from [SwitchTube](https://tube.switch.ch/).
 Running the SwitchTube Downloader without arguments displays available commands:
 
 <pre><code>
-./switch-tube-downloader
+./switchtube-downloader
 A CLI downloader for SwitchTube videos
 
 Usage:
@@ -52,21 +52,21 @@ Use "SwitchTube-Downloader [command] --help" for more information about a comman
 To download a video or channel, use the `download` command with either the
 video/channel ID or its full URL:
 
-<pre><code>./switch-tube-downloader download {id or url}</code></pre>
+<pre><code>./switchtube-downloader download {id or url}</code></pre>
 
 For example, for the URL `https://tube.switch.ch/channels/dh0sX6Fj1I`, the ID is
 `dh0sX6Fj1I`. You can use either:
 
 - **URL**: More convenient, directly copied from the browser:
-  <pre><code>./switch-tube-downloader download https://tube.switch.ch/channels/dh0sX6Fj1I</code></pre>
+  <pre><code>./switchtube-downloader download https://tube.switch.ch/channels/dh0sX6Fj1I</code></pre>
 
 - **ID**: Shorter, but requires extracting the ID:
-  <pre><code>./switch-tube-downloader download dh0sX6Fj1I</code></pre>
+  <pre><code>./switchtube-downloader download dh0sX6Fj1I</code></pre>
 
 To view detailed help for the `download` command:
 
 <pre><code>
-./switch-tube-downloader download --help
+./switchtube-downloader download --help
 Download a video or channel. Automatically detects if input is a video or channel.
 You can also pass the whole URL instead of the ID for convenience.
 
@@ -87,10 +87,10 @@ Flags:
 You can add optional flags to customize the download. For example:
 
 - Single flag:
-  <pre><code>./switch-tube-downloader download dh0sX6Fj1I -f</code></pre>
+  <pre><code>./switchtube-downloader download dh0sX6Fj1I -f</code></pre>
 
 - Multiple flags combined:
-  <pre><code>./switch-tube-downloader download dh0sX6Fj1I -a -f -e</code></pre>
+  <pre><code>./switchtube-downloader download dh0sX6Fj1I -a -f -e</code></pre>
 
 ### Available Flags
 
@@ -108,18 +108,18 @@ You can add optional flags to customize the download. For example:
   flags, the file will be overwritten.
 
 - `-h`, `--help`: Displays help information for the `download` command. Running
-  a command without a flag, e.g. `./switch-tube-downloader download` will
+  a command without a flag, e.g. `./switchtube-downloader download` will
   automatically trigger the help menu.
 
 - `-o`, `--output`: Specifies the output directory for downloaded files. Per
   default the current working directory is used (cwd). If you want to change the
   output directory you can pass the path like this:
-  - Absolute path: `./switch-tube-downloader download dh0sX6Fj1I -o /path/to/dir`
+  - Absolute path: `./switchtube-downloader download dh0sX6Fj1I -o /path/to/dir`
   - Relative path:
     - Current dir:
-      - `./switch-tube-downloader download dh0sX6Fj1I -o path/to/dir`
-      - `./switch-tube-downloader download dh0sX6Fj1I -o ./path/to/dir`
-    - Parent dir: `./switch-tube-downloader download dh0sX6Fj1I -o ../path/to/dir`
+      - `./switchtube-downloader download dh0sX6Fj1I -o path/to/dir`
+      - `./switchtube-downloader download dh0sX6Fj1I -o ./path/to/dir`
+    - Parent dir: `./switchtube-downloader download dh0sX6Fj1I -o ../path/to/dir`
 
 - `-s`, `--skip`: Skips the download if the video already exists in the output
   directory. This is useful to avoid re-downloading videos.
@@ -130,7 +130,7 @@ The `token` command manages the SwitchTube access token stored in the system
 keyring:
 
 <pre><code>
-./switch-tube-downloader token
+./switchtube-downloader token
 Manage the SwitchTube access token stored in the system keyring
 
 Usage:

@@ -1,4 +1,4 @@
-module switch-tube-downloader
+module switchtube-downloader
 
 go 1.24.1
 

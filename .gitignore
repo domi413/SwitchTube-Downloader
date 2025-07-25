@@ -30,7 +30,7 @@ go.work.sum
 .zed
 
 # Binary
-switch-tube-downloader
+switchtube-downloader
 
 # Others
 create_single_file.py

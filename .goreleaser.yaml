@@ -11,9 +11,9 @@ builds:
       - amd64
       - arm64
     main: ./main.go
-    binary: switch-tube-downloader
+    binary: switchtube-downloader
     ldflags:
-      - -s -w -X switch-tube-downloader/cmd.version=$(git describe --tags --always)
+      - -s -w -X switchtube-downloader/cmd.version=$(git describe --tags --always)
 
 archives:
   - format: "zip"
@@ -50,7 +50,7 @@ changelog:
       order: 4
 
 aurs:
-  - name: switch-tube-downloader
+  - name: switchtube-downloader
     version: "{{.Version}}"
     description: "A tool to download videos from SwitchTube."
     url: "

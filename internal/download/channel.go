@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"switch-tube-downloader/internal/helper/dir"
-	"switch-tube-downloader/internal/helper/ui"
-	"switch-tube-downloader/internal/models"
+	"switchtube-downloader/internal/helper/dir"
+	"switchtube-downloader/internal/helper/ui"
+	"switchtube-downloader/internal/models"
 )
 
 // channelInfo represents channel metadata.

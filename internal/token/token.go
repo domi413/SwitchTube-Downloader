@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os/user"
 
-	"switch-tube-downloader/internal/helper/ui"
+	"switchtube-downloader/internal/helper/ui"
 
 	"github.com/zalando/go-keyring"
 )
