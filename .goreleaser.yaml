@@ -51,6 +51,40 @@ changelog:
 
 aurs:
   - name: switchtube-downloader
-    version: "{{.Version}}"
-    description: "A tool to download videos from SwitchTube."
-    url: "
+    homepage: "https://github.com/domi413/SwitchTube-Downloader"
+    description: "A lightweight CLI to download SwitchTube videos"
+
+    maintainers:
+      - "Dominik Bühler <dom.buehler@outlook.com>"
+
+    license: "MIT"
+
+    git_url: "ssh://aur@aur.archlinux.org/switchtube-downloader.git"
+
+    private_key: "{{ .Env.AUR_KEY }}"
+
+    commit_author:
+      name: "domi413"
+      email: "dom.buehler@outlook.com"
+
+    package: |-
+      # Extract the appropriate zip file based on architecture
+      case $CARCH in
+        x86_64)
+          unzip -o "./switchtube-downloader-v${pkgver}-linux-amd64.zip" -d "${srcdir}"
+          ;;
+        aarch64)
+          unzip -o "./switchtube-downloader-v${pkgver}-linux-arm64.zip" -d "${srcdir}"
+          ;;
+      esac
+
+      # Install the binary, license, and documentation
+      install -Dm755 "./switchtube-downloader" -t "${pkgdir}/usr/bin"
+      install -Dm644 "./LICENSE" -t "${pkgdir}/usr/share/licenses/${pkgname}"
+      install -Dm644 "./README.md" -t "${pkgdir}/usr/share/doc/${pkgname}"
+
+    depends:
+      - unzip
+
+    commit_msg_template: "Update to {{ .Tag }}"
+    disable: "{{ .IsSnapshot }}"
