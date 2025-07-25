@@ -37,7 +37,7 @@ jobs:
           )
 
           keywords_regex_part=$(IFS="|"; echo "${keywords[*]}")
-          pattern="^(${keywords_regex_part}): ([A-Z].+[^-])$"
+          pattern="^(${keywords_regex_part}): ([A-Z].+\S)"
           pr_title="${{ github.event.pull_request.title }}"
 
           if ! [[ "$pr_title" =~ $pattern ]]; then
@@ -45,7 +45,7 @@ jobs:
             allowed_keywords_display=$(IFS=", "; echo "${keywords[*]}")
             echo -e "${BOLD_YELLOW}The PR title must follow the format: <type>: <Description>${RESET}"
             echo -e "${BOLD_YELLOW}Example: test: Added test${RESET}"
-            echo -e "${BOLD_YELLOW}The description must start with an uppercase letter (A-Z) and not end with a hyphen.${RESET}"
+            echo -e "${BOLD_YELLOW}The description must start with an uppercase letter (A-Z) and not contain grave.${RESET}"
             echo -e "${BOLD_YELLOW}Allowed <type> values are: ${allowed_keywords_display}.${RESET}"
             echo -e "${BOLD_YELLOW}Your title was: \"$pr_title\"${RESET}"
             exit 1
