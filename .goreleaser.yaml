@@ -31,7 +31,7 @@ release:
 
 changelog:
   use: github
-  format: "{{.SHA}}: {{.Message}} (@{{.AuthorUsername}})"
+  format: "{{.Message}}"
   sort: asc
   abbrev: -1
 
@@ -50,7 +50,7 @@ changelog:
       order: 4
 
 aurs:
-  - name: switchtube-downloader
+  - name: switchtube-downloader-bin
     homepage: "https://github.com/domi413/SwitchTube-Downloader"
     description: "A lightweight CLI to download SwitchTube videos"
 
