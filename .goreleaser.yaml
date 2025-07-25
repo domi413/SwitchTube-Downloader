@@ -31,7 +31,7 @@ release:
 
 changelog:
   use: github
-  format: "{{.Message}}  (@{{.AuthorUsername}} {{.SHA}})"
+  format: "{{.SHA}}: {{.Message}} (@{{.AuthorUsername}})"
   sort: asc
   abbrev: -1
 
