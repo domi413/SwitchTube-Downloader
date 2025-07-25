@@ -48,6 +48,9 @@ changelog:
     - title: "🧪 Tests"
       regexp: '^.*?test(\([[:word:]]+\))??!?:.+$'
       order: 4
+    - title: "📚 Documentation"
+      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      order: 5
 
 aurs:
   - name: switchtube-downloader-bin
@@ -68,23 +71,10 @@ aurs:
       email: "dom.buehler@outlook.com"
 
     package: |-
-      # Extract the appropriate zip file based on architecture
-      case $CARCH in
-        x86_64)
-          unzip -o "./switchtube-downloader-v${pkgver}-linux-amd64.zip" -d "${srcdir}"
-          ;;
-        aarch64)
-          unzip -o "./switchtube-downloader-v${pkgver}-linux-arm64.zip" -d "${srcdir}"
-          ;;
-      esac
-
       # Install the binary, license, and documentation
-      install -Dm755 "./switchtube-downloader" -t "${pkgdir}/usr/bin"
-      install -Dm644 "./LICENSE" -t "${pkgdir}/usr/share/licenses/${pkgname}"
-      install -Dm644 "./README.md" -t "${pkgdir}/usr/share/doc/${pkgname}"
-
-    depends:
-      - unzip
+      install -Dm755 "${srcdir}/switchtube-downloader" -t "${pkgdir}/usr/bin"
+      install -Dm644 "${srcdir}/LICENSE" -t "${pkgdir}/usr/share/licenses/${pkgname}"
+      install -Dm644 "${srcdir}/README.md" -t "${pkgdir}/usr/share/doc/${pkgname}"
 
     commit_msg_template: "Update to {{ .Tag }}"
     disable: "{{ .IsSnapshot }}"
