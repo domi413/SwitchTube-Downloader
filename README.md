@@ -9,6 +9,12 @@ to easily download videos from [SwitchTube](https://tube.switch.ch/).
    to obtain the appropriate binary for your operating system (Linux, MacOS,
    Windows).
 
+   Arch-Linux users can also use the AUR package:
+
+   ```bash
+   yay -S switchtube-downloader-bin
+   ```
+
 2. **Make executable**: After downloading, ensure the binary is executable. For
    Linux and MacOS, run:
 
