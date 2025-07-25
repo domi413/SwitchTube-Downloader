@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"switch-tube-downloader/internal/token"
+	"switchtube-downloader/internal/token"
 
 	"github.com/spf13/cobra"
 )

@@ -5,8 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"path/filepath"
-	"strings"
+	"net/url"
+	"os"
+
+	"switchtube-downloader/internal/helper/dir"
+	"switchtube-downloader/internal/helper/ui"
+	"switchtube-downloader/internal/models"
 )
 
 // videoVariant represents a video download variant.
@@ -16,11 +20,16 @@ type videoVariant struct {
 }
 
 var (
-	errNoVariantsFound        = errors.New("no video variants found")
-	errFailedDecodeVariants   = errors.New("failed to decode variants")
-	errFailedGetVideoVariants = errors.New("failed to get video variants")
-	errFailedGetVideoInfo     = errors.New("failed to get video information")
-	errFailedDecodeVideoMeta  = errors.New("failed to decode video metadata")
+	errFailedConstructURL      = errors.New("failed to construct URL")
+	errFailedCopyVideoData     = errors.New("failed to copy video data")
+	errFailedDecodeVariants    = errors.New("failed to decode variants")
+	errFailedDecodeVideoMeta   = errors.New("failed to decode video metadata")
+	errFailedFetchVideoStream  = errors.New("failed to fetch video stream")
+	errFailedGetVideoInfo      = errors.New("failed to get video information")
+	errFailedGetVideoVariants  = errors.New("failed to get video variants")
+	errFailedToCreateVideoFile = errors.New("failed to create video file")
+	errHTTPNotOK               = errors.New("HTTP request failed with non-OK status")
+	errNoVariantsFound         = errors.New("no video variants found")
 )
 
 // downloadVideo downloads a video.
@@ -29,8 +38,7 @@ func downloadVideo(
 	token string,
 	currentItem int,
 	totalItems int,
-	useEpisode bool,
-	force bool,
+	config models.DownloadConfig,
 ) error {
 	videoData, err := getVideoMetadata(videoID, token)
 	if err != nil {
@@ -42,27 +50,20 @@ func downloadVideo(
 		return fmt.Errorf("%w: %w", errFailedGetVideoVariants, err)
 	}
 
-	filename := createFilename(
+	file, err := dir.CreateVideoFile(
 		videoData.Title,
 		variants[0].MediaType,
 		videoData.Episode,
-		useEpisode,
+		config,
 	)
-
-	file, err := createFile(filename, force)
-	if err != nil {
-		return err
+	if errors.Is(err, dir.ErrFileCreationAborted) {
+		return fmt.Errorf("%w", dir.ErrFileCreationAborted)
+	} else if err != nil {
+		return fmt.Errorf("%w: %w", errFailedToCreateVideoFile, err)
 	}
 
-	defer func() {
-		err := file.Close()
-		if err != nil {
-			fmt.Printf("Warning: failed to close file %s: %v\n", filename, err)
-		}
-	}()
-
 	// Download the video
-	err = downloadProcess(variants[0].Path, token, file, filename, currentItem, totalItems)
+	err = downloadProcess(variants[0].Path, token, file, file.Name(), currentItem, totalItems)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 	}
@@ -71,10 +72,15 @@ func downloadVideo(
 }
 
 // getVideoMetadata retrieves video metadata from the API.
-func getVideoMetadata(videoID, token string) (*video, error) {
-	resp, err := makeAuthenticatedRequest(videoAPI+videoID, token)
+func getVideoMetadata(videoID, token string) (*models.Video, error) {
+	fullURL, err := url.JoinPath(baseURL, videoAPI, videoID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
+	}
+
+	resp, err := makeRequest(fullURL, token)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
 	}
 
 	defer func() {
@@ -93,7 +99,7 @@ func getVideoMetadata(videoID, token string) (*video, error) {
 		)
 	}
 
-	var videoData video
+	var videoData models.Video
 
 	err = json.NewDecoder(resp.Body).Decode(&videoData)
 	if err != nil {
@@ -105,11 +111,14 @@ func getVideoMetadata(videoID, token string) (*video, error) {
 
 // getVideoVariants retrieves available video variants from the API.
 func getVideoVariants(videoID, token string) ([]videoVariant, error) {
-	endpoint := videoAPI + videoID + "/video_variants"
-
-	resp, err := makeAuthenticatedRequest(endpoint, token)
+	fullURL, err := url.JoinPath(baseURL, videoAPI, videoID, "video_variants")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
+	}
+
+	resp, err := makeRequest(fullURL, token)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
 	}
 
 	defer func() {
@@ -142,53 +151,52 @@ func getVideoVariants(videoID, token string) ([]videoVariant, error) {
 	return variants, nil
 }
 
-// createFilename creates a sanitized filename from video title and media type.
-func createFilename(title string, mediaType string, episodeNr string, useEpisode bool) string {
-	// Extract extension from media type (e.g., "video/mp4" -> "mp4")
-	parts := strings.Split(mediaType, "/")
-
-	extension := "mp4" // default fallback
-	if len(parts) >= minMediaTypeParts {
-		extension = parts[1]
+// downloadProcess handles the actual file download.
+func downloadProcess(
+	endpoint string,
+	token string,
+	file *os.File,
+	filename string,
+	currentItem int,
+	totalItems int,
+) error {
+	fullURL, err := url.JoinPath(baseURL, endpoint)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedConstructURL, err)
 	}
 
-	sanitizedTitle := sanitizeFilename(title)
-	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, " ", "_")
-
-	// Add episode prefix if episode flag is set
-	var filename string
-	if useEpisode && episodeNr != "" {
-		filename = fmt.Sprintf("%s_%s.%s", episodeNr, sanitizedTitle, extension)
-	} else {
-		filename = fmt.Sprintf("%s.%s", sanitizedTitle, extension)
+	resp, err := makeRequest(fullURL, token)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
 	}
 
-	return filepath.Clean(filename)
-}
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
 
-// sanitizeFilename removes or replaces characters that are invalid in filenames.
-func sanitizeFilename(filename string) string {
-	replacements := map[string]string{
-		"/":  "-",
-		"\\": "-",
-		":":  "-",
-		"*":  "",
-		"?":  "",
-		"\"": "",
-		"<":  "",
-		">":  "",
-		"|":  "-",
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf(
+			"%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
 	}
 
-	sanitized := filename
-	for invalid, replacement := range replacements {
-		sanitized = strings.ReplaceAll(sanitized, invalid, replacement)
+	err = ui.ProgressBar(
+		resp.Body,
+		file,
+		resp.ContentLength,
+		filename,
+		currentItem,
+		totalItems,
+	)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errFailedCopyVideoData, err)
 	}
 
-	sanitized = strings.TrimSpace(sanitized)
-	for strings.Contains(sanitized, "--") {
-		sanitized = strings.ReplaceAll(sanitized, "--", "-")
-	}
-
-	return sanitized
+	return nil
 }

@@ -1,6 +1,5 @@
-// Package prompt provides utility functions for prompting the user for input
-// from the command line.
-package prompt
+// Package ui provides user interface functions for input and confirmation.
+package ui
 
 import (
 	"bufio"

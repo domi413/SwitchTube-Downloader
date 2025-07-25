@@ -22,6 +22,9 @@ linters:
           - testpackage
 
   settings:
+    cyclop:
+      max-complexity: 11
+
     exhaustruct:
       exclude:
         - '.+/cobra\.Command$'
@@ -29,6 +32,8 @@ linters:
     gosec:
       excludes:
         - G101
+        - G304
+
     varnamelen:
       min-name-length: 1
 

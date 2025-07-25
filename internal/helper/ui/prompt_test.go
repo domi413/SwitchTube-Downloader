@@ -1,4 +1,4 @@
-package prompt
+package ui
 
 import (
 	"fmt"
@@ -109,16 +109,66 @@ func TestConfirm(t *testing.T) {
 		input  string
 		want   bool
 	}{
-		{name: "yes lowercase", format: "Continue?", input: "y\n", want: true},
-		{name: "yes uppercase", format: "Continue?", input: "Y\n", want: true},
-		{name: "yes full word lowercase", format: "Continue?", input: "yes\n", want: true},
-		{name: "yes full word uppercase", format: "Continue?", input: "YES\n", want: true},
-		{name: "yes with spaces", format: "Continue?", input: "  y  \n", want: true},
-		{name: "no lowercase", format: "Continue?", input: "n\n", want: false},
-		{name: "no uppercase", format: "Continue?", input: "N\n", want: false},
-		{name: "no full word", format: "Continue?", input: "no\n", want: false},
-		{name: "empty input defaults to no", format: "Continue?", input: "\n", want: false},
-		{name: "invalid input defaults to no", format: "Continue?", input: "💀\n", want: false},
+		{
+			name:   "yes lowercase",
+			format: "Continue?",
+			input:  "y\n",
+			want:   true,
+		},
+		{
+			name:   "yes uppercase",
+			format: "Continue?",
+			input:  "Y\n",
+			want:   true,
+		},
+		{
+			name:   "yes full word lowercase",
+			format: "Continue?",
+			input:  "yes\n",
+			want:   true,
+		},
+		{
+			name:   "yes full word uppercase",
+			format: "Continue?",
+			input:  "YES\n",
+			want:   true,
+		},
+		{
+			name:   "yes with spaces",
+			format: "Continue?",
+			input:  "  y  \n",
+			want:   true,
+		},
+		{
+			name:   "no lowercase",
+			format: "Continue?",
+			input:  "n\n",
+			want:   false,
+		},
+		{
+			name:   "no uppercase",
+			format: "Continue?",
+			input:  "N\n",
+			want:   false,
+		},
+		{
+			name:   "no full word",
+			format: "Continue?",
+			input:  "no\n",
+			want:   false,
+		},
+		{
+			name:   "empty input defaults to no",
+			format: "Continue?",
+			input:  "\n",
+			want:   false,
+		},
+		{
+			name:   "invalid input defaults to no (non ascii)",
+			format: "Continue?",
+			input:  "💀\n",
+			want:   false,
+		},
 		{
 			name:   "format with single argument",
 			format: "Delete file %s?",
