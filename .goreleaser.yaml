@@ -59,7 +59,7 @@ aurs:
 
     license: "MIT"
 
-    git_url: "ssh://aur@aur.archlinux.org/switchtube-downloader.git"
+    git_url: "ssh://aur@aur.archlinux.org/switchtube-downloader-bin.git"
 
     private_key: "{{ .Env.AUR_KEY }}"
 
