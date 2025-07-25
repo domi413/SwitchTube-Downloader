@@ -1,5 +1,5 @@
 // Package token provides functionality for managing access tokens to
-// authenticate with SwitchTube
+// authenticate with SwitchTube.
 package token
 
 import (
@@ -22,14 +22,14 @@ var (
 	// exists in the keyring.
 	ErrTokenAlreadyExists = errors.New("token already exists in keyring")
 
-	errTokenEmpty         = errors.New("token cannot be empty")
-	errNoTokenFoundDelete = errors.New("no token found in keyring")
-	errFailedToGetUser    = errors.New("failed to get current user")
-	errUnableToCreate     = errors.New("unable to create access token")
-	errFailedToStore      = errors.New("failed to store token in keyring")
 	errFailedToDelete     = errors.New("failed to delete token from keyring")
+	errFailedToGetUser    = errors.New("failed to get current user")
 	errFailedToRetrieve   = errors.New("failed to retrieve token from keyring")
+	errFailedToStore      = errors.New("failed to store token in keyring")
+	errNoTokenFoundDelete = errors.New("no token found in keyring")
 	errNoTokenFound       = errors.New("no token found in keyring - run 'token set' first")
+	errTokenEmpty         = errors.New("token cannot be empty")
+	errUnableToCreate     = errors.New("unable to create access token")
 )
 
 // Get retrieves the access token from the system keyring.
@@ -53,9 +53,12 @@ func Get() (string, error) {
 
 // Set creates and stores a new access token in the system keyring.
 func Set() error {
-	// Check if token already exists
 	existingToken, err := Get()
-	if err == nil && existingToken != "" {
+	if err != nil && !errors.Is(err, errNoTokenFound) {
+		return fmt.Errorf("%w: %w", errFailedToRetrieve, err)
+	}
+
+	if existingToken != "" {
 		fmt.Println("Token already exists in keyring")
 
 		if !ui.Confirm("Do you want to replace it?") {

@@ -16,8 +16,8 @@ const (
 	// File and directory permissions.
 	dirPermissions = 0o755
 
-	// Minimum number of parts in a media type string (e.g., "video/mp4" has 2
-	// parts).
+	// Minimum number of parts in a media type string
+	// (e.g., "video/mp4" has 2 parts).
 	minMediaTypeParts = 2
 )
 

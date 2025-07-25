@@ -167,7 +167,7 @@ advanced features. Here’s how it compares:
 
 | Feature                        | [SwitchTube-Downloader](https://github.com/domi413/SwitchTube-Downloader) | [switchtube-dl](https://github.com/panmona/switchtube-dl) | [switchtube-rs](https://github.com/jeremystucki/switchtube-rs) |
 | ------------------------------ | ------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------- |
-| **Binary Size**                | 6.7MB (Simple and light) ✅                                               | 54.47MB (Bulky)                                           | No binary release                                              |
+| **Binary Size**                | 7.2MB (light) ✅                                                          | 54.47MB (Bulky)                                           | No binary release                                              |
 | **Store Access Token**         | Automatic storage ✅                                                      | Manual configuration                                      | Not supported                                                  |
 | **Encrypted Access Token**     | Secure encryption ✅                                                      | No encryption                                             | Not supported                                                  |
 | **Intuitive Downloads**        | One simple command ✅                                                     | Separate commands for videos and channels                 | Complex CLI usage                                              |
