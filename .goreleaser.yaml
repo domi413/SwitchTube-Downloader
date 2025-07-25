@@ -13,7 +13,7 @@ builds:
     main: ./main.go
     binary: switchtube-downloader
     ldflags:
-      - -s -w -X switchtube-downloader/cmd.version=$(git describe --tags --always)
+      - -s -w -X switchtube-downloader/cmd.version={{.Tag}}
 
 archives:
   - format: "zip"

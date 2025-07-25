@@ -1,4 +1,5 @@
-// Package main provides the entry point for the SwitchTube downloader CLI application.
+// Package main provides the entry point for the SwitchTube downloader CLI
+// application.
 package main
 
 import (
