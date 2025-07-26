@@ -55,13 +55,11 @@ func Download(config models.DownloadConfig) error {
 
 	switch downloadType {
 	case videoType:
-		err = downloadVideo(id, token, 1, 1, config)
-		if err != nil {
+		if err = downloadVideo(id, token, 1, 1, config); err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 		}
 	case unknownType:
-		err = downloadVideo(id, token, 1, 1, config)
-		if errors.Is(err, dir.ErrCreateFile) {
+		if err = downloadVideo(id, token, 1, 1, config); errors.Is(err, dir.ErrCreateFile) {
 			return fmt.Errorf("%w", err)
 		} else if err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
@@ -69,8 +67,7 @@ func Download(config models.DownloadConfig) error {
 
 		fallthrough
 	case channelType:
-		err = downloadChannel(id, token, config)
-		if err != nil {
+		if err = downloadChannel(id, token, config); err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadChannel, err)
 		}
 	default:

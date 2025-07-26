@@ -48,16 +48,14 @@ func ProgressBar(
 	proxyReader := bar.ProxyReader(src)
 
 	defer func() {
-		err := proxyReader.Close()
-		if err != nil {
+		if err := proxyReader.Close(); err != nil {
 			fmt.Printf("error waiting for progress bar: %v\n", err)
 		}
 	}()
 
 	start := time.Now()
 
-	_, err := io.Copy(dst, proxyReader)
-	if err != nil {
+	if _, err := io.Copy(dst, proxyReader); err != nil {
 		return fmt.Errorf("failed to copy data: %w", err)
 	}
 

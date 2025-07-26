@@ -46,16 +46,14 @@ func CreateVideoFile(
 	}
 
 	if !config.Force {
-		_, err := os.Stat(filename)
-		if err == nil {
+		if _, err := os.Stat(filename); err == nil {
 			if config.Skip || !ui.Confirm("File %s already exists. Overwrite?", filename) {
 				return nil, fmt.Errorf("%w", ErrFileCreationAborted)
 			}
 		}
 	}
 
-	err := os.MkdirAll(filepath.Dir(filename), dirPermissions)
-	if err != nil {
+	if err := os.MkdirAll(filepath.Dir(filename), dirPermissions); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedCreateFolder, err)
 	}
 
@@ -76,8 +74,7 @@ func CreateChannelFolder(channelName string, config models.DownloadConfig) (stri
 		folderName = filepath.Join(config.Output, folderName)
 	}
 
-	err := os.MkdirAll(folderName, dirPermissions)
-	if err != nil {
+	if err := os.MkdirAll(folderName, dirPermissions); err != nil {
 		return "", fmt.Errorf("%w: %w", errFailedCreateFolder, err)
 	}
 

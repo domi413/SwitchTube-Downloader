@@ -195,13 +195,11 @@ func TestSelectVideos(t *testing.T) {
 			}
 			defer os.Remove(tmpFile.Name())
 
-			_, err = tmpFile.WriteString(tt.input)
-			if err != nil {
+			if _, err = tmpFile.WriteString(tt.input); err != nil {
 				t.Fatalf("Failed to write to temp file: %v", err)
 			}
 
-			_, err = tmpFile.Seek(0, 0)
-			if err != nil {
+			if _, err = tmpFile.Seek(0, 0); err != nil {
 				t.Fatalf("Failed to seek temp file: %v", err)
 			}
 
