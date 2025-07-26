@@ -1,7 +1,5 @@
 # SwitchTube-Downloader: A Streamlined CLI for SwitchTube Video Downloads
 
-[![coverage](https://raw.githubusercontent.com/domi413/SwitchTube-Downloader/badges/main/coverage.svg)](/.github/workflows/ci.yml)
-
 **SwitchTube-Downloader** is a lightweight, efficient command-line tool designed
 to easily download videos from [SwitchTube](https://tube.switch.ch/).
 

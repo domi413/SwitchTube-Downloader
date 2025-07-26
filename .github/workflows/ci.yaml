@@ -1,9 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     types:
       - opened
@@ -84,14 +81,6 @@ jobs:
 
       - name: Run tests and generate coverage
         run: go test $(go list ./... | grep -v -E '/cmd|/models') -coverprofile=coverage.out && go tool cover -func=coverage.out | grep total
-
-      - name: Check test coverage
-        uses: vladopajic/go-test-coverage@v2
-        with:
-          profile: coverage.out
-          # threshold-total: 80
-          git-token: ${{ secrets.GITHUB_TOKEN }}
-          git-branch: badges
 
   build:
     strategy:
