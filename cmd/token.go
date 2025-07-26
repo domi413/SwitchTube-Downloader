@@ -23,8 +23,7 @@ var tokenCmd = &cobra.Command{
 	Short: "Manage the SwitchTube access token",
 	Long:  "Manage the SwitchTube access token stored in the system keyring",
 	Run: func(cmd *cobra.Command, _ []string) {
-		err := cmd.Help()
-		if err != nil {
+		if err := cmd.Help(); err != nil {
 			fmt.Printf("Error displaying help: %v\n", err)
 
 			return
@@ -53,9 +52,7 @@ var tokenSetCmd = &cobra.Command{
 	Short: "Set a new access token",
 	Long:  "Create and store a new SwitchTube access token in the system keyring",
 	Run: func(_ *cobra.Command, _ []string) {
-		err := token.Set()
-
-		if errors.Is(err, token.ErrTokenAlreadyExists) {
+		if err := token.Set(); errors.Is(err, token.ErrTokenAlreadyExists) {
 			return
 		} else if err != nil {
 			fmt.Printf("Error setting token: %v\n", err)
@@ -72,8 +69,7 @@ var tokenDeleteCmd = &cobra.Command{
 	Short: "Delete access token from the keyring",
 	Long:  "Delete the SwitchTube access token from the system keyring",
 	Run: func(_ *cobra.Command, _ []string) {
-		err := token.Delete()
-		if err != nil {
+		if err := token.Delete(); err != nil {
 			fmt.Printf("Error deleting token: %v\n", err)
 
 			return

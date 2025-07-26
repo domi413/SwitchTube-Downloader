@@ -84,8 +84,7 @@ func getVideoMetadata(videoID, token string) (*models.Video, error) {
 	}
 
 	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
+		if err := resp.Body.Close(); err != nil {
 			fmt.Printf("Warning: failed to close response body: %v\n", err)
 		}
 	}()
@@ -100,9 +99,7 @@ func getVideoMetadata(videoID, token string) (*models.Video, error) {
 	}
 
 	var videoData models.Video
-
-	err = json.NewDecoder(resp.Body).Decode(&videoData)
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&videoData); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedDecodeVideoMeta, err)
 	}
 
@@ -122,8 +119,7 @@ func getVideoVariants(videoID, token string) ([]videoVariant, error) {
 	}
 
 	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
+		if err := resp.Body.Close(); err != nil {
 			fmt.Printf("Warning: failed to close response body: %v\n", err)
 		}
 	}()
@@ -138,9 +134,7 @@ func getVideoVariants(videoID, token string) ([]videoVariant, error) {
 	}
 
 	var variants []videoVariant
-
-	err = json.NewDecoder(resp.Body).Decode(&variants)
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&variants); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedDecodeVariants, err)
 	}
 
@@ -171,8 +165,7 @@ func downloadProcess(
 	}
 
 	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
+		if err := resp.Body.Close(); err != nil {
 			fmt.Printf("Warning: failed to close response body: %v\n", err)
 		}
 	}()
@@ -186,14 +179,7 @@ func downloadProcess(
 		)
 	}
 
-	err = ui.ProgressBar(
-		resp.Body,
-		file,
-		resp.ContentLength,
-		filename,
-		currentItem,
-		totalItems,
-	)
+	err = ui.ProgressBar(resp.Body, file, resp.ContentLength, filename, currentItem, totalItems)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedCopyVideoData, err)
 	}

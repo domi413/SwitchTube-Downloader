@@ -114,8 +114,7 @@ func getChannelVideos(channelID, token string) ([]models.Video, error) {
 	}
 
 	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
+		if err := resp.Body.Close(); err != nil {
 			fmt.Printf("Warning: failed to close response body: %v\n", err)
 		}
 	}()
@@ -130,9 +129,7 @@ func getChannelVideos(channelID, token string) ([]models.Video, error) {
 	}
 
 	var videos []models.Video
-
-	err = json.NewDecoder(resp.Body).Decode(&videos)
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&videos); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedDecodeChannelVids, err)
 	}
 
@@ -152,8 +149,7 @@ func getChannelInfo(channelID, token string) (*channelInfo, error) {
 	}
 
 	defer func() {
-		err := resp.Body.Close()
-		if err != nil {
+		if err := resp.Body.Close(); err != nil {
 			fmt.Printf("Warning: failed to close response body: %v\n", err)
 		}
 	}()
@@ -168,9 +164,7 @@ func getChannelInfo(channelID, token string) (*channelInfo, error) {
 	}
 
 	var channelData channelInfo
-
-	err = json.NewDecoder(resp.Body).Decode(&channelData)
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&channelData); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedDecodeChannelMeta, err)
 	}
 

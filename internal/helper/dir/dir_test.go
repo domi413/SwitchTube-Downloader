@@ -143,13 +143,11 @@ func TestCreateVideoFile(t *testing.T) {
 					createFilename(tt.title, tt.mediaType, tt.episodeNr, tt.config.UseEpisode),
 				)
 
-				err := os.MkdirAll(filepath.Dir(filename), dirPermissions)
-				if err != nil {
+				if err := os.MkdirAll(filepath.Dir(filename), dirPermissions); err != nil {
 					t.Fatalf("Failed to create directory: %v", err)
 				}
 
-				_, err = os.Create(filename)
-				if err != nil {
+				if _, err := os.Create(filename); err != nil {
 					t.Fatalf("Failed to create file: %v", err)
 				}
 			}
@@ -161,13 +159,11 @@ func TestCreateVideoFile(t *testing.T) {
 			}
 			defer os.Remove(tmpFile.Name())
 
-			_, err = tmpFile.WriteString(tt.input)
-			if err != nil {
+			if _, err = tmpFile.WriteString(tt.input); err != nil {
 				t.Fatalf("Failed to write to temp file: %v", err)
 			}
 
-			_, err = tmpFile.Seek(0, 0)
-			if err != nil {
+			if _, err = tmpFile.Seek(0, 0); err != nil {
 				t.Fatalf("Failed to seek temp file: %v", err)
 			}
 
@@ -295,8 +291,7 @@ func TestCreateChannelFolder(t *testing.T) {
 			}
 
 			if !tt.wantErr {
-				_, err := os.Stat(folder)
-				if os.IsNotExist(err) {
+				if _, err := os.Stat(folder); os.IsNotExist(err) {
 					t.Errorf("CreateChannelFolder() did not create folder %q", folder)
 				}
 			}
@@ -392,8 +387,7 @@ func TestSanitizeFilename(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := sanitizeFilename(tt.in)
-			if got != tt.want {
+			if got := sanitizeFilename(tt.in); got != tt.want {
 				t.Errorf("sanitizeFilename() = %q, want %q", got, tt.want)
 			}
 		})

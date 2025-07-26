@@ -56,8 +56,7 @@ func TestInput(t *testing.T) {
 			defer os.Remove(tmpFile.Name())
 
 			// Write test input
-			_, err = tmpFile.WriteString(tt.input)
-			if err != nil {
+			if _, err = tmpFile.WriteString(tt.input); err != nil {
 				t.Fatalf("Failed to write to temp file: %v", err)
 			}
 
@@ -201,8 +200,7 @@ func TestConfirm(t *testing.T) {
 			defer os.Remove(tmpFile.Name())
 
 			// Write test input
-			_, err = tmpFile.WriteString(tt.input)
-			if err != nil {
+			if _, err = tmpFile.WriteString(tt.input); err != nil {
 				t.Fatalf("Failed to write to temp file: %v", err)
 			}
 

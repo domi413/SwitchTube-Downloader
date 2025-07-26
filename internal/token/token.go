@@ -78,8 +78,7 @@ func Set() error {
 		return fmt.Errorf("%w: %w", errFailedToGetUser, err)
 	}
 
-	err = keyring.Set(serviceName, userName.Username, token)
-	if err != nil {
+	if err = keyring.Set(serviceName, userName.Username, token); err != nil {
 		return fmt.Errorf("%w: %w", errFailedToStore, err)
 	}
 
@@ -93,8 +92,7 @@ func Delete() error {
 		return fmt.Errorf("%w: %w", errFailedToGetUser, err)
 	}
 
-	err = keyring.Delete(serviceName, userName.Username)
-	if err != nil {
+	if err = keyring.Delete(serviceName, userName.Username); err != nil {
 		if errors.Is(err, keyring.ErrNotFound) {
 			return fmt.Errorf("%w for %s", errNoTokenFoundDelete, serviceName)
 		}
