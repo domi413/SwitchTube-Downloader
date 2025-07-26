@@ -85,7 +85,7 @@ jobs:
   build:
     strategy:
       matrix:
-        go: ["stable"]
+        go: [stable]
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     name: Build
