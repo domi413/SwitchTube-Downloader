@@ -193,6 +193,17 @@ I have no interest to implement such a feature, though I'm happy to review pull
 requests. The required library can be found
 [here](https://github.com/ivanpirog/coloredcobra).
 
+> Can we download multiple videos at once?
+
+Currently, the downloader doesn't support batch downloads (e.g.
+`./switchtube-downloader download dh5sX1Fj3I qu0fK6Sw1V dh0sX6Fj1I`). If
+there is enough interest, I might implement this feature in the future.
+
+> Is it possible to configure default settings such as output directory?
+
+Currently, the downloader does not support this. If there is enough interest,
+I might implement this feature in the future.
+
 ## Testing the SwitchTube API
 
 For developers or curious users, you can interact directly with the SwitchTube
