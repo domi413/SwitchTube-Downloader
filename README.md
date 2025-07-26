@@ -167,7 +167,7 @@ advanced features. Here’s how it compares:
 
 | Feature                        | [SwitchTube-Downloader](https://github.com/domi413/SwitchTube-Downloader) | [switchtube-dl](https://github.com/panmona/switchtube-dl) | [switchtube-rs](https://github.com/jeremystucki/switchtube-rs) |
 | ------------------------------ | ------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------- |
-| **Binary Size**                | 6.7MB (Simple and light) ✅                                               | 54.47MB (Bulky)                                           | No binary release                                              |
+| **Binary Size**                | 7.2MB (light) ✅                                                          | 54.47MB (Bulky)                                           | No binary release                                              |
 | **Store Access Token**         | Automatic storage ✅                                                      | Manual configuration                                      | Not supported                                                  |
 | **Encrypted Access Token**     | Secure encryption ✅                                                      | No encryption                                             | Not supported                                                  |
 | **Intuitive Downloads**        | One simple command ✅                                                     | Separate commands for videos and channels                 | Complex CLI usage                                              |
@@ -192,6 +192,17 @@ use the highest quality available anyway.
 I have no interest to implement such a feature, though I'm happy to review pull
 requests. The required library can be found
 [here](https://github.com/ivanpirog/coloredcobra).
+
+> Can we download multiple videos at once?
+
+Currently, the downloader doesn't support batch downloads (e.g.
+`./switchtube-downloader download dh5sX1Fj3I qu0fK6Sw1V dh0sX6Fj1I`). If
+there is enough interest, I might implement this feature in the future.
+
+> Is it possible to configure default settings such as output directory?
+
+Currently, the downloader does not support this. If there is enough interest,
+I might implement this feature in the future.
 
 ## Testing the SwitchTube API
 

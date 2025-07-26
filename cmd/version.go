@@ -18,6 +18,6 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number of the SwitchTube downloader",
 	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Printf("SwitchTube downloader version: %s\n", version)
+		fmt.Println(version)
 	},
 }

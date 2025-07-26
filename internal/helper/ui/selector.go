@@ -73,8 +73,8 @@ func parseSelection(input string, maxVideos int) ([]int, error) {
 			continue
 		}
 
-		// Handle range (e.g., "1-5")
 		var err error
+		// Handle range (e.g., "1-5")
 		if strings.Contains(part, "-") {
 			indices, err = handleRangeSelection(part, maxVideos, indices, seen)
 			if err != nil {

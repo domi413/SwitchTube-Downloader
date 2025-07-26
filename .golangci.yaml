@@ -17,6 +17,7 @@ linters:
           - errcheck
           - exhaustruct
           - funlen
+          - gocognit
           - gosec
           - paralleltest
           - testpackage
