@@ -52,7 +52,12 @@ func downloadVideo(
 	}
 
 	if checkExists &&
-		!dir.CheckVideoExists(videoData.Title, variants[0].MediaType, videoData.Episode, config) {
+		dir.OverwriteVideoIfExists(
+			videoData.Title,
+			variants[0].MediaType,
+			videoData.Episode,
+			config,
+		) {
 		return nil // Skip download
 	}
 

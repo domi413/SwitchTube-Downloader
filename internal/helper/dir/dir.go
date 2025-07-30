@@ -28,7 +28,9 @@ var (
 	errFailedCreateFolder = errors.New("failed to create folder")
 )
 
-func CheckVideoExists(
+// OverwriteVideoIfExists checks if a video file already exists and prompts the
+// user if they want to overwrite it.
+func OverwriteVideoIfExists(
 	title string,
 	mediaType string,
 	episodeNr string,
