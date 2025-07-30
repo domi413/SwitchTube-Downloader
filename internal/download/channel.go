@@ -77,20 +77,43 @@ func downloadSelectedVideos(
 	token string,
 	config models.DownloadConfig,
 ) {
-	var failed []string
+	var (
+		failed     []string
+		toDownload []int
+	)
 
-	for i, videoIndex := range selectedIndices {
+	// First pass: Check if files exist and prompt for overwrite
+
+	for _, videoIndex := range selectedIndices {
 		video := videos[videoIndex]
 
-		err := downloadVideo(video.ID, token, i+1, len(selectedIndices), config)
-		if err != nil && !errors.Is(err, dir.ErrFileCreationAborted) {
+		variants, err := getVideoVariants(video.ID, token)
+		if err != nil {
+			fmt.Printf("\nFailed to get video variants for %s: %v\n", video.Title, err)
+			failed = append(failed, video.Title)
+
+			continue
+		}
+
+		filename := dir.CreateFilename(video.Title, variants[0].MediaType, video.Episode, config)
+		if !dir.OverwriteVideoIfExists(filename, config) {
+			toDownload = append(toDownload, videoIndex)
+		}
+	}
+
+	// Second pass: Download the videos that were approved
+	for i, videoIndex := range toDownload {
+		video := videos[videoIndex]
+
+		err := downloadVideo(video.ID, token, i+1, len(toDownload), config, false)
+		if err != nil {
 			fmt.Printf("\nFailed: %s - %v\n", video.Title, err)
 			failed = append(failed, video.Title)
 		}
 	}
 
 	fmt.Printf("\nDownload complete! %d/%d videos successful\n",
-		len(selectedIndices)-len(failed), len(selectedIndices))
+		len(toDownload)-len(failed), len(selectedIndices))
 
 	if len(failed) > 0 {
 		fmt.Println("Failed downloads:")

@@ -25,34 +25,58 @@ var (
 	// ErrCreateFile is returned when file creation fails.
 	ErrCreateFile = errors.New("failed to create file")
 
-	// ErrFileCreationAborted is returned when the user aborts file creation.
-	ErrFileCreationAborted = errors.New("file creation aborted")
-
 	errFailedCreateFolder = errors.New("failed to create folder")
 )
 
-// CreateVideoFile creates a sanitized filename from video title and media type,
-// and opens the file for writing.
-func CreateVideoFile(
+// CreateFilename creates a sanitized filename from video title and media type.
+func CreateFilename(
 	title string,
 	mediaType string,
 	episodeNr string,
 	config models.DownloadConfig,
-) (*os.File, error) {
-	filename := createFilename(title, mediaType, episodeNr, config.UseEpisode)
+) string {
+	// Extract extension from media type (e.g., "video/mp4" -> "mp4")
+	parts := strings.Split(mediaType, "/")
+
+	extension := "mp4" // default fallback
+	if len(parts) >= minMediaTypeParts {
+		extension = parts[1]
+	}
+
+	sanitizedTitle := sanitizeFilename(title)
+	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, " ", "_")
+
+	// Add episode prefix if episode flag is set
+	var filename string
+	if config.UseEpisode && episodeNr != "" {
+		filename = fmt.Sprintf("%s_%s.%s", episodeNr, sanitizedTitle, extension)
+	} else {
+		filename = fmt.Sprintf("%s.%s", sanitizedTitle, extension)
+	}
 
 	if config.Output != "" {
 		filename = filepath.Join(config.Output, filename)
 	}
 
+	return filepath.Clean(filename)
+}
+
+// OverwriteVideoIfExists checks if a video file exists and prompts to overwrite
+// it. Returns false if the file doesn't exist or if overwriting is declined.
+func OverwriteVideoIfExists(filename string, config models.DownloadConfig) bool {
 	if !config.Force {
 		if _, err := os.Stat(filename); err == nil {
 			if config.Skip || !ui.Confirm("File %s already exists. Overwrite?", filename) {
-				return nil, fmt.Errorf("%w", ErrFileCreationAborted)
+				return true
 			}
 		}
 	}
 
+	return false
+}
+
+// CreateVideoFile creates a video file on disk with the specified filename.
+func CreateVideoFile(filename string) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(filename), dirPermissions); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedCreateFolder, err)
 	}
@@ -81,32 +105,7 @@ func CreateChannelFolder(channelName string, config models.DownloadConfig) (stri
 	return folderName, nil
 }
 
-// createFilename creates a sanitized filename from video title and media type.
-func createFilename(title string, mediaType string, episodeNr string, useEpisode bool) string {
-	// Extract extension from media type (e.g., "video/mp4" -> "mp4")
-	parts := strings.Split(mediaType, "/")
-
-	extension := "mp4" // default fallback
-	if len(parts) >= minMediaTypeParts {
-		extension = parts[1]
-	}
-
-	sanitizedTitle := sanitizeFilename(title)
-	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, " ", "_")
-
-	// Add episode prefix if episode flag is set
-	var filename string
-	if useEpisode && episodeNr != "" {
-		filename = fmt.Sprintf("%s_%s.%s", episodeNr, sanitizedTitle, extension)
-	} else {
-		filename = fmt.Sprintf("%s.%s", sanitizedTitle, extension)
-	}
-
-	return filepath.Clean(filename)
-}
-
-// sanitizeFilename removes or replaces characters that are invalid in
-// filenames.
+// sanitizeFilename removes or replaces invalid characters in filenames.
 func sanitizeFilename(filename string) string {
 	replacements := map[string]string{
 		"/":  "-",

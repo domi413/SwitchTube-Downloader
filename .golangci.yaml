@@ -7,7 +7,7 @@ linters:
     - forbidigo
     - gochecknoglobals
     - gochecknoinits
-    # - noinlineerr # not available in workflow?
+    # - noinlineerr # not available in workflow? (v2.2.0)
     - wsl
 
   exclusions:

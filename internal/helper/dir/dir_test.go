@@ -10,139 +10,148 @@ import (
 	"switchtube-downloader/internal/models"
 )
 
-func TestCreateVideoFile(t *testing.T) {
+func TestCreateFilename(t *testing.T) {
 	tests := []struct {
-		name       string
-		title      string
-		mediaType  string
-		episodeNr  string
-		config     models.DownloadConfig
-		input      string
-		wantFile   string
-		wantErr    bool
-		err        error
-		wantPrompt string
-		createFile bool // Whether to create a file to simulate existing file
+		name      string
+		title     string
+		mediaType string
+		episodeNr string
+		config    models.DownloadConfig
+		want      string
 	}{
 		{
-			name:       "basic video file creation",
-			title:      "Test Video",
-			mediaType:  "video/mp4",
-			episodeNr:  "",
-			config:     models.DownloadConfig{},
-			input:      "",
-			wantFile:   "Test_Video.mp4",
-			wantErr:    false,
-			wantPrompt: "",
+			name:      "basic video",
+			title:     "Test Video",
+			mediaType: "video/mp4",
+			episodeNr: "",
+			config:    models.DownloadConfig{UseEpisode: false},
+			want:      "Test_Video.mp4",
 		},
 		{
-			name:       "video file with episode number",
-			title:      "Test Video",
-			mediaType:  "video/mp4",
-			episodeNr:  "69",
-			config:     models.DownloadConfig{UseEpisode: true},
-			input:      "",
-			wantFile:   "69_Test_Video.mp4",
-			wantErr:    false,
-			wantPrompt: "",
+			name:      "video with episode number",
+			title:     "Test Video",
+			mediaType: "video/mp4",
+			episodeNr: "E01",
+			config:    models.DownloadConfig{UseEpisode: true},
+			want:      "E01_Test_Video.mp4",
 		},
 		{
-			name:       "download video to specific output dir",
-			title:      "Test Video",
-			mediaType:  "video/mp4",
-			episodeNr:  "",
-			config:     models.DownloadConfig{Output: "test_path"},
-			input:      "",
-			wantFile:   filepath.Join("test_path", "Test_Video.mp4"),
-			wantErr:    false,
-			wantPrompt: "",
+			name:      "invalid media type",
+			title:     "Test Video",
+			mediaType: "invalid",
+			episodeNr: "",
+			config:    models.DownloadConfig{UseEpisode: false},
+			want:      "Test_Video.mp4",
 		},
 		{
-			name:       "video file with invalid characters",
-			title:      "Test/Video:With*Invalid?Chars",
-			mediaType:  "video/mp4",
-			episodeNr:  "",
-			config:     models.DownloadConfig{},
-			input:      "",
-			wantFile:   "Test-Video-WithInvalidChars.mp4",
-			wantErr:    false,
-			wantPrompt: "",
+			name:      "video with invalid characters",
+			title:     "Test/Video:With*Invalid?Chars",
+			mediaType: "video/mp4",
+			episodeNr: "",
+			config:    models.DownloadConfig{UseEpisode: false},
+			want:      "Test-Video-WithInvalidChars.mp4",
 		},
 		{
-			name:       "existing file with overwrite confirmation",
-			title:      "Test Video",
-			mediaType:  "video/mp4",
-			episodeNr:  "",
-			config:     models.DownloadConfig{},
-			input:      "y\n",
-			wantFile:   "Test_Video.mp4",
-			wantErr:    false,
-			wantPrompt: "File Test_Video.mp4 already exists. Overwrite? (y/N): ",
-			createFile: true,
+			name:      "video with output path",
+			title:     "Test Video",
+			mediaType: "video/mp4",
+			episodeNr: "",
+			config:    models.DownloadConfig{Output: "output", UseEpisode: false},
+			want:      filepath.Join("output", "Test_Video.mp4"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := CreateFilename(tt.title, tt.mediaType, tt.episodeNr, tt.config)
+			if got != tt.want {
+				t.Errorf("CreateFilename() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestOverwriteVideoIfExists(t *testing.T) {
+	tests := []struct {
+		name        string
+		filename    string
+		config      models.DownloadConfig
+		wantPrompt  string
+		promptInput string
+		wantValue   bool
+		createFile  bool // Whether to create the file to simulate existing file
+	}{
+		{
+			name:        "video exists, overwrite",
+			filename:    "existing_video.mp4",
+			config:      models.DownloadConfig{},
+			wantPrompt:  "File existing_video.mp4 already exists. Overwrite? (y/N): ",
+			promptInput: "y\n",
+			wantValue:   false,
+			createFile:  true,
 		},
 		{
-			name:       "existing file aborted",
-			title:      "Test Video",
-			mediaType:  "video/mp4",
-			episodeNr:  "",
-			config:     models.DownloadConfig{},
-			input:      "n\n",
-			wantFile:   "",
-			wantErr:    true,
-			err:        ErrFileCreationAborted,
-			wantPrompt: "File Test_Video.mp4 already exists. Overwrite? (y/N): ",
-			createFile: true,
+			name:        "video exists, do not overwrite",
+			filename:    "existing_video.mp4",
+			config:      models.DownloadConfig{},
+			wantPrompt:  "File existing_video.mp4 already exists. Overwrite? (y/N): ",
+			promptInput: "\n",
+			wantValue:   true,
+			createFile:  true,
 		},
 		{
-			name:       "existing file with skip",
-			title:      "Test Video",
-			mediaType:  "video/mp4",
-			episodeNr:  "",
-			config:     models.DownloadConfig{Skip: true},
-			input:      "",
-			wantFile:   "",
-			wantErr:    true,
-			err:        ErrFileCreationAborted,
-			wantPrompt: "",
-			createFile: true,
+			name:        "video does not exist",
+			filename:    "non_existing_video.mp4",
+			config:      models.DownloadConfig{},
+			wantPrompt:  "",
+			promptInput: "",
+			wantValue:   false,
+			createFile:  false,
 		},
 		{
-			name:       "existing file with force",
-			title:      "Test Video",
-			mediaType:  "video/mp4",
-			episodeNr:  "",
-			config:     models.DownloadConfig{Force: true},
-			input:      "",
-			wantFile:   "Test_Video.mp4",
-			wantErr:    false,
-			wantPrompt: "",
-			createFile: true,
+			name:        "video exists, force-flag set",
+			filename:    "existing_video.mp4",
+			config:      models.DownloadConfig{Force: true},
+			wantPrompt:  "",
+			promptInput: "",
+			wantValue:   false,
+			createFile:  true,
 		},
 		{
-			name:       "invalid media type fallback",
-			title:      "Test Video",
-			mediaType:  "invalid",
-			episodeNr:  "",
-			config:     models.DownloadConfig{},
-			input:      "",
-			wantFile:   "Test_Video.mp4",
-			wantErr:    false,
-			wantPrompt: "",
+			name:        "video does not exist, force-flag set",
+			filename:    "non_existing_video.mp4",
+			config:      models.DownloadConfig{Force: true},
+			wantPrompt:  "",
+			promptInput: "",
+			wantValue:   false,
+			createFile:  false,
+		},
+		{
+			name:        "video exists, skip-flag set",
+			filename:    "existing_video.mp4",
+			config:      models.DownloadConfig{Skip: true},
+			wantPrompt:  "",
+			promptInput: "",
+			wantValue:   true,
+			createFile:  true,
+		},
+		{
+			name:        "video does not exist, skip-flag set",
+			filename:    "non_existing_video.mp4",
+			config:      models.DownloadConfig{Skip: true},
+			wantPrompt:  "",
+			promptInput: "",
+			wantValue:   false,
+			createFile:  false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			tt.config.Output = filepath.Join(tempDir, tt.config.Output)
+			filename := filepath.Join(tempDir, tt.filename)
 
-			// Simulate existing file
 			if tt.createFile {
-				filename := filepath.Join(
-					tempDir,
-					createFilename(tt.title, tt.mediaType, tt.episodeNr, tt.config.UseEpisode),
-				)
-
 				if err := os.MkdirAll(filepath.Dir(filename), dirPermissions); err != nil {
 					t.Fatalf("Failed to create directory: %v", err)
 				}
@@ -152,14 +161,13 @@ func TestCreateVideoFile(t *testing.T) {
 				}
 			}
 
-			// Simulate stdin for ui.Confirm
 			tmpFile, err := os.CreateTemp(t.TempDir(), "test-input")
 			if err != nil {
 				t.Fatalf("Failed to create temp file: %v", err)
 			}
 			defer os.Remove(tmpFile.Name())
 
-			if _, err = tmpFile.WriteString(tt.input); err != nil {
+			if _, err = tmpFile.WriteString(tt.promptInput); err != nil {
 				t.Fatalf("Failed to write to temp file: %v", err)
 			}
 
@@ -178,16 +186,85 @@ func TestCreateVideoFile(t *testing.T) {
 
 			defer func() { os.Stdout = oldStdout }()
 
-			fd, err := CreateVideoFile(tt.title, tt.mediaType, tt.episodeNr, tt.config)
-			if fd != nil {
-				defer fd.Close()
-			}
+			got := OverwriteVideoIfExists(filename, tt.config)
 
 			w.Close()
 
 			output := make([]byte, 1000)
 			n, _ := r.Read(output)
 			capturedOutput := string(output[:n])
+
+			if tt.wantPrompt != "" {
+				adjustedOutput := strings.ReplaceAll(
+					capturedOutput,
+					tempDir+string(os.PathSeparator),
+					"",
+				)
+				if adjustedOutput != tt.wantPrompt {
+					t.Errorf(
+						"OverwriteVideoIfExists() prompt = %q, want %q",
+						adjustedOutput,
+						tt.wantPrompt,
+					)
+				}
+			} else if capturedOutput != "" {
+				t.Errorf("OverwriteVideoIfExists() prompt = %q, want empty", capturedOutput)
+			}
+
+			if got != tt.wantValue {
+				t.Errorf("OverwriteVideoIfExists() = %v, want %v", got, tt.wantValue)
+			}
+		})
+	}
+}
+
+func TestCreateVideoFile(t *testing.T) {
+	tests := []struct {
+		name       string
+		filename   string
+		wantErr    bool
+		err        error
+		createFile bool
+	}{
+		{
+			name:       "create new video",
+			filename:   "test_video.mp4",
+			wantErr:    false,
+			createFile: false,
+		},
+		{
+			name:       "create video in subdirectory",
+			filename:   filepath.Join("sub", "test_video.mp4"),
+			wantErr:    false,
+			createFile: false,
+		},
+		{
+			name:       "video already exists",
+			filename:   "existing_video.mp4",
+			wantErr:    false,
+			createFile: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			filename := filepath.Join(tempDir, tt.filename)
+
+			if tt.createFile {
+				if err := os.MkdirAll(filepath.Dir(filename), dirPermissions); err != nil {
+					t.Fatalf("Failed to create directory: %v", err)
+				}
+
+				if _, err := os.Create(filename); err != nil {
+					t.Fatalf("Failed to create file: %v", err)
+				}
+			}
+
+			fd, err := CreateVideoFile(filename)
+			if fd != nil {
+				defer fd.Close()
+			}
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateVideoFile() error = %v, wantErr %v", err, tt.wantErr)
@@ -198,32 +275,9 @@ func TestCreateVideoFile(t *testing.T) {
 			}
 
 			if !tt.wantErr {
-				if fd == nil {
-					t.Error("CreateVideoFile() returned nil file descriptor, expected non-nil")
-				} else {
-					gotFile := fd.Name()
-					if gotFile != filepath.Join(tempDir, tt.wantFile) {
-						t.Errorf("CreateVideoFile() file = %q, want %q", gotFile, filepath.Join(tempDir, tt.wantFile))
-					}
+				if _, err := os.Stat(filename); os.IsNotExist(err) {
+					t.Errorf("CreateVideoFile() did not create file %q", filename)
 				}
-			}
-
-			if tt.wantPrompt != "" {
-				// Remove tempDir prefix for comparison
-				adjustedOutput := strings.ReplaceAll(
-					capturedOutput,
-					tempDir+string(os.PathSeparator),
-					"",
-				)
-				if adjustedOutput != tt.wantPrompt {
-					t.Errorf(
-						"CreateVideoFile() prompt = %q, want %q",
-						adjustedOutput,
-						tt.wantPrompt,
-					)
-				}
-			} else if capturedOutput != "" {
-				t.Errorf("CreateVideoFile() prompt = %q, want empty", capturedOutput)
 			}
 		})
 	}
@@ -294,59 +348,6 @@ func TestCreateChannelFolder(t *testing.T) {
 				if _, err := os.Stat(folder); os.IsNotExist(err) {
 					t.Errorf("CreateChannelFolder() did not create folder %q", folder)
 				}
-			}
-		})
-	}
-}
-
-func TestCreateFilename(t *testing.T) {
-	tests := []struct {
-		name       string
-		title      string
-		mediaType  string
-		episodeNr  string
-		useEpisode bool
-		want       string
-	}{
-		{
-			name:       "basic filename",
-			title:      "Test Video",
-			mediaType:  "video/mp4",
-			episodeNr:  "",
-			useEpisode: false,
-			want:       "Test_Video.mp4",
-		},
-		{
-			name:       "filename with episode",
-			title:      "Test Video",
-			mediaType:  "video/mp4",
-			episodeNr:  "E01",
-			useEpisode: true,
-			want:       "E01_Test_Video.mp4",
-		},
-		{
-			name:       "invalid media type",
-			title:      "Test Video",
-			mediaType:  "invalid",
-			episodeNr:  "",
-			useEpisode: false,
-			want:       "Test_Video.mp4",
-		},
-		{
-			name:       "title with invalid characters",
-			title:      "Test/Video:With*Invalid?Chars",
-			mediaType:  "video/mp4",
-			episodeNr:  "",
-			useEpisode: false,
-			want:       "Test-Video-WithInvalidChars.mp4",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := createFilename(tt.title, tt.mediaType, tt.episodeNr, tt.useEpisode)
-			if got != tt.want {
-				t.Errorf("createFilename() = %q, want %q", got, tt.want)
 			}
 		})
 	}
