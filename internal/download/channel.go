@@ -90,7 +90,9 @@ func downloadSelectedVideos(
 			failed = append(failed, video.Title)
 			continue
 		}
-		if !dir.OverwriteVideoIfExists(video.Title, variants[0].MediaType, video.Episode, config) {
+
+		filename := dir.CreateFilename(video.Title, variants[0].MediaType, video.Episode, config)
+		if !dir.OverwriteVideoIfExists(filename, config) {
 			toDownload = append(toDownload, videoIndex)
 		}
 	}

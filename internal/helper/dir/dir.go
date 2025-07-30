@@ -28,20 +28,24 @@ var (
 	errFailedCreateFolder = errors.New("failed to create folder")
 )
 
-// OverwriteVideoIfExists checks if a video file already exists and prompts the
-// user if they want to overwrite it.
-func OverwriteVideoIfExists(
+func CreateFilename(
 	title string,
 	mediaType string,
 	episodeNr string,
 	config models.DownloadConfig,
-) bool {
+) string {
 	filename := createFilename(title, mediaType, episodeNr, config.UseEpisode)
 
 	if config.Output != "" {
 		filename = filepath.Join(config.Output, filename)
 	}
 
+	return filename
+}
+
+// OverwriteVideoIfExists checks if a video file already exists and prompts the
+// user if they want to overwrite it.
+func OverwriteVideoIfExists(filename string, config models.DownloadConfig) bool {
 	if !config.Force {
 		if _, err := os.Stat(filename); err == nil {
 			if config.Skip || !ui.Confirm("File %s already exists. Overwrite?", filename) {
@@ -55,18 +59,7 @@ func OverwriteVideoIfExists(
 
 // CreateVideoFile creates a sanitized filename from video title and media type,
 // and opens the file for writing.
-func CreateVideoFile(
-	title string,
-	mediaType string,
-	episodeNr string,
-	config models.DownloadConfig,
-) (*os.File, error) {
-	filename := createFilename(title, mediaType, episodeNr, config.UseEpisode)
-
-	if config.Output != "" {
-		filename = filepath.Join(config.Output, filename)
-	}
-
+func CreateVideoFile(filename string, config models.DownloadConfig) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(filename), dirPermissions); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedCreateFolder, err)
 	}
