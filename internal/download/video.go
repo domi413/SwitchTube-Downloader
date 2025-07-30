@@ -39,6 +39,7 @@ func downloadVideo(
 	currentItem int,
 	totalItems int,
 	config models.DownloadConfig,
+	checkExists bool,
 ) error {
 	videoData, err := getVideoMetadata(videoID, token)
 	if err != nil {
@@ -50,15 +51,18 @@ func downloadVideo(
 		return fmt.Errorf("%w: %w", errFailedGetVideoVariants, err)
 	}
 
+	if checkExists &&
+		!dir.CheckVideoExists(videoData.Title, variants[0].MediaType, videoData.Episode, config) {
+		return nil // Skip download
+	}
+
 	file, err := dir.CreateVideoFile(
 		videoData.Title,
 		variants[0].MediaType,
 		videoData.Episode,
 		config,
 	)
-	if errors.Is(err, dir.ErrFileCreationAborted) {
-		return fmt.Errorf("%w", dir.ErrFileCreationAborted)
-	} else if err != nil {
+	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedToCreateVideoFile, err)
 	}
 

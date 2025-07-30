@@ -25,11 +25,31 @@ var (
 	// ErrCreateFile is returned when file creation fails.
 	ErrCreateFile = errors.New("failed to create file")
 
-	// ErrFileCreationAborted is returned when the user aborts file creation.
-	ErrFileCreationAborted = errors.New("file creation aborted")
-
 	errFailedCreateFolder = errors.New("failed to create folder")
 )
+
+func CheckVideoExists(
+	title string,
+	mediaType string,
+	episodeNr string,
+	config models.DownloadConfig,
+) bool {
+	filename := createFilename(title, mediaType, episodeNr, config.UseEpisode)
+
+	if config.Output != "" {
+		filename = filepath.Join(config.Output, filename)
+	}
+
+	if !config.Force {
+		if _, err := os.Stat(filename); err == nil {
+			if config.Skip || !ui.Confirm("File %s already exists. Overwrite?", filename) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
 
 // CreateVideoFile creates a sanitized filename from video title and media type,
 // and opens the file for writing.
@@ -43,14 +63,6 @@ func CreateVideoFile(
 
 	if config.Output != "" {
 		filename = filepath.Join(config.Output, filename)
-	}
-
-	if !config.Force {
-		if _, err := os.Stat(filename); err == nil {
-			if config.Skip || !ui.Confirm("File %s already exists. Overwrite?", filename) {
-				return nil, fmt.Errorf("%w", ErrFileCreationAborted)
-			}
-		}
 	}
 
 	if err := os.MkdirAll(filepath.Dir(filename), dirPermissions); err != nil {

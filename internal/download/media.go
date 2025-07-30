@@ -55,11 +55,11 @@ func Download(config models.DownloadConfig) error {
 
 	switch downloadType {
 	case videoType:
-		if err = downloadVideo(id, token, 1, 1, config); err != nil {
+		if err = downloadVideo(id, token, 1, 1, config, true); err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 		}
 	case unknownType:
-		if err = downloadVideo(id, token, 1, 1, config); errors.Is(err, dir.ErrCreateFile) {
+		if err = downloadVideo(id, token, 1, 1, config, false); errors.Is(err, dir.ErrCreateFile) {
 			return fmt.Errorf("%w", err)
 		} else if err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
