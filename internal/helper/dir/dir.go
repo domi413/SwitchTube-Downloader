@@ -28,23 +28,41 @@ var (
 	errFailedCreateFolder = errors.New("failed to create folder")
 )
 
+// CreateFilename creates a sanitized filename from video title and media type.
 func CreateFilename(
 	title string,
 	mediaType string,
 	episodeNr string,
 	config models.DownloadConfig,
 ) string {
-	filename := createFilename(title, mediaType, episodeNr, config.UseEpisode)
+	// Extract extension from media type (e.g., "video/mp4" -> "mp4")
+	parts := strings.Split(mediaType, "/")
+
+	extension := "mp4" // default fallback
+	if len(parts) >= minMediaTypeParts {
+		extension = parts[1]
+	}
+
+	sanitizedTitle := sanitizeFilename(title)
+	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, " ", "_")
+
+	// Add episode prefix if episode flag is set
+	var filename string
+	if config.UseEpisode && episodeNr != "" {
+		filename = fmt.Sprintf("%s_%s.%s", episodeNr, sanitizedTitle, extension)
+	} else {
+		filename = fmt.Sprintf("%s.%s", sanitizedTitle, extension)
+	}
 
 	if config.Output != "" {
 		filename = filepath.Join(config.Output, filename)
 	}
 
-	return filename
+	return filepath.Clean(filename)
 }
 
-// OverwriteVideoIfExists checks if a video file already exists and prompts the
-// user if they want to overwrite it.
+// OverwriteVideoIfExists checks if a video file exists and prompts to overwrite
+// it. Returns false if the file doesn't exist or if overwriting is declined.
 func OverwriteVideoIfExists(filename string, config models.DownloadConfig) bool {
 	if !config.Force {
 		if _, err := os.Stat(filename); err == nil {
@@ -88,32 +106,7 @@ func CreateChannelFolder(channelName string, config models.DownloadConfig) (stri
 	return folderName, nil
 }
 
-// createFilename creates a sanitized filename from video title and media type.
-func createFilename(title string, mediaType string, episodeNr string, useEpisode bool) string {
-	// Extract extension from media type (e.g., "video/mp4" -> "mp4")
-	parts := strings.Split(mediaType, "/")
-
-	extension := "mp4" // default fallback
-	if len(parts) >= minMediaTypeParts {
-		extension = parts[1]
-	}
-
-	sanitizedTitle := sanitizeFilename(title)
-	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, " ", "_")
-
-	// Add episode prefix if episode flag is set
-	var filename string
-	if useEpisode && episodeNr != "" {
-		filename = fmt.Sprintf("%s_%s.%s", episodeNr, sanitizedTitle, extension)
-	} else {
-		filename = fmt.Sprintf("%s.%s", sanitizedTitle, extension)
-	}
-
-	return filepath.Clean(filename)
-}
-
-// sanitizeFilename removes or replaces characters that are invalid in
-// filenames.
+// sanitizeFilename removes or replaces invalid characters in filenames.
 func sanitizeFilename(filename string) string {
 	replacements := map[string]string{
 		"/":  "-",
