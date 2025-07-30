@@ -77,10 +77,13 @@ func downloadSelectedVideos(
 	token string,
 	config models.DownloadConfig,
 ) {
-	var failed []string
-	var toDownload []int
+	var (
+		failed     []string
+		toDownload []int
+	)
 
 	// First pass: Check if files exist and prompt for overwrite
+
 	for _, videoIndex := range selectedIndices {
 		video := videos[videoIndex]
 
@@ -88,6 +91,7 @@ func downloadSelectedVideos(
 		if err != nil {
 			fmt.Printf("\nFailed to get video variants for %s: %v\n", video.Title, err)
 			failed = append(failed, video.Title)
+
 			continue
 		}
 

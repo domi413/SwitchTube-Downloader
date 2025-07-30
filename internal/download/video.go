@@ -56,7 +56,7 @@ func downloadVideo(
 		return nil // Skip download
 	}
 
-	file, err := dir.CreateVideoFile(filename, config)
+	file, err := dir.CreateVideoFile(filename)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedToCreateVideoFile, err)
 	}

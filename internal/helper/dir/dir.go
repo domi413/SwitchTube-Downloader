@@ -75,9 +75,8 @@ func OverwriteVideoIfExists(filename string, config models.DownloadConfig) bool 
 	return false
 }
 
-// CreateVideoFile creates a sanitized filename from video title and media type,
-// and opens the file for writing.
-func CreateVideoFile(filename string, config models.DownloadConfig) (*os.File, error) {
+// CreateVideoFile creates a video file on disk with the specified filename.
+func CreateVideoFile(filename string) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(filename), dirPermissions); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedCreateFolder, err)
 	}

@@ -155,6 +155,7 @@ func TestOverwriteVideoIfExists(t *testing.T) {
 				if err := os.MkdirAll(filepath.Dir(filename), dirPermissions); err != nil {
 					t.Fatalf("Failed to create directory: %v", err)
 				}
+
 				if _, err := os.Create(filename); err != nil {
 					t.Fatalf("Failed to create file: %v", err)
 				}
@@ -169,30 +170,42 @@ func TestOverwriteVideoIfExists(t *testing.T) {
 			if _, err = tmpFile.WriteString(tt.promptInput); err != nil {
 				t.Fatalf("Failed to write to temp file: %v", err)
 			}
+
 			if _, err = tmpFile.Seek(0, 0); err != nil {
 				t.Fatalf("Failed to seek temp file: %v", err)
 			}
 
 			oldStdin := os.Stdin
 			os.Stdin = tmpFile
+
 			defer func() { os.Stdin = oldStdin }()
 
 			oldStdout := os.Stdout
 			r, w, _ := os.Pipe()
 			os.Stdout = w
+
 			defer func() { os.Stdout = oldStdout }()
 
 			got := OverwriteVideoIfExists(filename, tt.config)
 
 			w.Close()
+
 			output := make([]byte, 1000)
 			n, _ := r.Read(output)
 			capturedOutput := string(output[:n])
 
 			if tt.wantPrompt != "" {
-				adjustedOutput := strings.ReplaceAll(capturedOutput, tempDir+string(os.PathSeparator), "")
+				adjustedOutput := strings.ReplaceAll(
+					capturedOutput,
+					tempDir+string(os.PathSeparator),
+					"",
+				)
 				if adjustedOutput != tt.wantPrompt {
-					t.Errorf("OverwriteVideoIfExists() prompt = %q, want %q", adjustedOutput, tt.wantPrompt)
+					t.Errorf(
+						"OverwriteVideoIfExists() prompt = %q, want %q",
+						adjustedOutput,
+						tt.wantPrompt,
+					)
 				}
 			} else if capturedOutput != "" {
 				t.Errorf("OverwriteVideoIfExists() prompt = %q, want empty", capturedOutput)
@@ -209,7 +222,6 @@ func TestCreateVideoFile(t *testing.T) {
 	tests := []struct {
 		name       string
 		filename   string
-		config     models.DownloadConfig
 		wantErr    bool
 		err        error
 		createFile bool
@@ -217,21 +229,18 @@ func TestCreateVideoFile(t *testing.T) {
 		{
 			name:       "create new video",
 			filename:   "test_video.mp4",
-			config:     models.DownloadConfig{},
 			wantErr:    false,
 			createFile: false,
 		},
 		{
 			name:       "create video in subdirectory",
 			filename:   filepath.Join("sub", "test_video.mp4"),
-			config:     models.DownloadConfig{},
 			wantErr:    false,
 			createFile: false,
 		},
 		{
 			name:       "video already exists",
 			filename:   "existing_video.mp4",
-			config:     models.DownloadConfig{},
 			wantErr:    false,
 			createFile: true,
 		},
@@ -246,12 +255,13 @@ func TestCreateVideoFile(t *testing.T) {
 				if err := os.MkdirAll(filepath.Dir(filename), dirPermissions); err != nil {
 					t.Fatalf("Failed to create directory: %v", err)
 				}
+
 				if _, err := os.Create(filename); err != nil {
 					t.Fatalf("Failed to create file: %v", err)
 				}
 			}
 
-			fd, err := CreateVideoFile(filename, tt.config)
+			fd, err := CreateVideoFile(filename)
 			if fd != nil {
 				defer fd.Close()
 			}
@@ -259,6 +269,7 @@ func TestCreateVideoFile(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateVideoFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
+
 			if tt.wantErr && !errors.Is(err, tt.err) {
 				t.Errorf("CreateVideoFile() error = %v, want %v", err, tt.err)
 			}
