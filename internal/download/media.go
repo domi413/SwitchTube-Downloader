@@ -59,10 +59,11 @@ func Download(config models.DownloadConfig) error {
 			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 		}
 	case unknownType:
-		if err = downloadVideo(id, token, 1, 1, config, false); errors.Is(err, dir.ErrCreateFile) {
+		// If the type is unknown, we try to download as a video first.
+		if err = downloadVideo(id, token, 1, 1, config, true); err == nil {
+			return nil
+		} else if errors.Is(err, dir.ErrCreateFile) {
 			return fmt.Errorf("%w", err)
-		} else if err != nil {
-			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 		}
 
 		fallthrough
