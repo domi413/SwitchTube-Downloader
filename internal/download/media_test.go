@@ -12,7 +12,7 @@ func TestExtractIDAndType(t *testing.T) {
 		wantID   string
 		wantType mediaType
 		wantErr  bool
-		err      error
+		errType  error
 	}{
 		{
 			name:     "video URL",
@@ -41,7 +41,7 @@ func TestExtractIDAndType(t *testing.T) {
 			wantID:   "invalid/123",
 			wantType: unknownType,
 			wantErr:  true,
-			err:      errInvalidURL,
+			errType:  errInvalidURL,
 		},
 		{
 			name:     "input with spaces",
@@ -68,8 +68,8 @@ func TestExtractIDAndType(t *testing.T) {
 				t.Errorf("extractIDAndType() error = %v, wantErr %v", err, tt.wantErr)
 			}
 
-			if tt.wantErr && !errors.Is(err, tt.err) {
-				t.Errorf("extractIDAndType() error = %v, want %v", err, tt.err)
+			if tt.wantErr && !errors.Is(err, tt.errType) {
+				t.Errorf("extractIDAndType() error = %v, want %v", err, tt.errType)
 			}
 		})
 	}
