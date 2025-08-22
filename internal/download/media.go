@@ -11,7 +11,7 @@ import (
 
 	"switchtube-downloader/internal/helper/dir"
 	"switchtube-downloader/internal/models"
-	token "switchtube-downloader/internal/token"
+	"switchtube-downloader/internal/token"
 )
 
 const (
@@ -34,6 +34,7 @@ const (
 
 var (
 	errCouldNotDetermineType   = errors.New("could not determine if channel or video")
+	errFailedToCreateRequest   = errors.New("failed to create request")
 	errFailedToDownloadChannel = errors.New("failed to download channel")
 	errFailedToDownloadVideo   = errors.New("failed to download video")
 	errFailedToExtractType     = errors.New("failed to extract type")
@@ -102,14 +103,14 @@ func extractIDAndType(input string) (string, mediaType, error) {
 func makeRequest(url string, token string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("%w: %w", errFailedToCreateRequest, err)
 	}
 
 	req.Header.Set(headerAuthorization, "Token "+token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
+		return nil, fmt.Errorf("%w: %w", errFailedToCreateRequest, err)
 	}
 
 	return resp, nil

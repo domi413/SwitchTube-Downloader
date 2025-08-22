@@ -12,8 +12,8 @@ import (
 	"switchtube-downloader/internal/models"
 )
 
-// channelInfo represents channel metadata.
-type channelInfo struct {
+// channelMetadata represents channel metadata.
+type channelMetadata struct {
 	Name string `json:"name"`
 }
 
@@ -28,7 +28,7 @@ var (
 
 // downloadChannel downloads selected videos from a channel.
 func downloadChannel(channelID string, token string, config models.DownloadConfig) error {
-	channelInfo, err := getChannelInfo(channelID, token)
+	channelInfo, err := getChannelMetadata(channelID, token)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedGetChannelInfo, err)
 	}
@@ -83,7 +83,6 @@ func downloadSelectedVideos(
 	)
 
 	// First pass: Check if files exist and prompt for overwrite
-
 	for _, videoIndex := range selectedIndices {
 		video := videos[videoIndex]
 
@@ -159,8 +158,8 @@ func getChannelVideos(channelID, token string) ([]models.Video, error) {
 	return videos, nil
 }
 
-// getChannelInfo retrieves channel metadata from the API.
-func getChannelInfo(channelID, token string) (*channelInfo, error) {
+// getChannelMetadata retrieves channel metadata from the API.
+func getChannelMetadata(channelID, token string) (*channelMetadata, error) {
 	fullURL, err := url.JoinPath(baseURL, channelAPI, channelID)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
@@ -186,7 +185,7 @@ func getChannelInfo(channelID, token string) (*channelInfo, error) {
 		)
 	}
 
-	var channelData channelInfo
+	var channelData channelMetadata
 	if err = json.NewDecoder(resp.Body).Decode(&channelData); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedDecodeChannelMeta, err)
 	}

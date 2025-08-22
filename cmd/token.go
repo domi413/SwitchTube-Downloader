@@ -67,7 +67,7 @@ var tokenSetCmd = &cobra.Command{
 var tokenDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete access token from the keyring",
-	Long:  "Delete the SwitchTube access token from the system keyring",
+	Long:  "Delete the SwitchTube access token stored the system keyring",
 	Run: func(_ *cobra.Command, _ []string) {
 		if err := token.Delete(); err != nil {
 			fmt.Printf("Error deleting token: %v\n", err)
