@@ -1,7 +1,6 @@
 package download
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -94,28 +93,8 @@ func (vd *videoDownloader) getMetadata(videoID string) (*models.Video, error) {
 		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
 	}
 
-	resp, err := vd.client.makeRequest(fullURL)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
-	}
-
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("Warning: failed to close response body: %v\n", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf(
-			"%w: status %d: %s",
-			errHTTPNotOK,
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-		)
-	}
-
 	var videoData models.Video
-	if err = json.NewDecoder(resp.Body).Decode(&videoData); err != nil {
+	if err := vd.client.makeJSONRequest(fullURL, &videoData); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedDecodeVideoMeta, err)
 	}
 
@@ -129,28 +108,8 @@ func (vd *videoDownloader) getVariants(videoID string) ([]videoVariant, error) {
 		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
 	}
 
-	resp, err := vd.client.makeRequest(fullURL)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
-	}
-
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("Warning: failed to close response body: %v\n", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf(
-			"%w: status %d: %s",
-			errHTTPNotOK,
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-		)
-	}
-
 	var variants []videoVariant
-	if err = json.NewDecoder(resp.Body).Decode(&variants); err != nil {
+	if err := vd.client.makeJSONRequest(fullURL, &variants); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedDecodeVariants, err)
 	}
 
@@ -176,23 +135,14 @@ func (vd *videoDownloader) downloadProcess(endpoint string, file *os.File) error
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf(
-			"%w: status %d: %s",
+		return fmt.Errorf("%w: status %d: %s",
 			errHTTPNotOK,
 			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-		)
+			http.StatusText(resp.StatusCode))
 	}
 
-	currentItem := vd.progress.CurrentItem
-	if currentItem == 0 {
-		currentItem = 1
-	}
-
-	totalItems := vd.progress.TotalItems
-	if totalItems == 0 {
-		totalItems = 1
-	}
+	currentItem := max(vd.progress.CurrentItem, 1)
+	totalItems := max(vd.progress.TotalItems, 1)
 
 	err = ui.ProgressBar(resp.Body, file, resp.ContentLength, file.Name(), currentItem, totalItems)
 	if err != nil {

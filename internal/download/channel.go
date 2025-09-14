@@ -1,10 +1,8 @@
 package download
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 
 	"switchtube-downloader/internal/helper/dir"
@@ -90,32 +88,12 @@ func (cd *channelDownloader) getMetadata(channelID string) (*channelMetadata, er
 		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
 	}
 
-	resp, err := cd.client.makeRequest(fullURL)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
-	}
-
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("Warning: failed to close response body: %v\n", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf(
-			"%w: status %d: %s",
-			errHTTPNotOK,
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-		)
-	}
-
-	var channelData channelMetadata
-	if err = json.NewDecoder(resp.Body).Decode(&channelData); err != nil {
+	var data channelMetadata
+	if err := cd.client.makeJSONRequest(fullURL, &data); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedDecodeChannelMeta, err)
 	}
 
-	return &channelData, nil
+	return &data, nil
 }
 
 // getVideos retrieves all videos from a channel.
@@ -125,28 +103,8 @@ func (cd *channelDownloader) getVideos(channelID string) ([]models.Video, error)
 		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
 	}
 
-	resp, err := cd.client.makeRequest(fullURL)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
-	}
-
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("Warning: failed to close response body: %v\n", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf(
-			"%w: status %d: %s",
-			errHTTPNotOK,
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-		)
-	}
-
 	var videos []models.Video
-	if err = json.NewDecoder(resp.Body).Decode(&videos); err != nil {
+	if err := cd.client.makeJSONRequest(fullURL, &videos); err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedDecodeChannelVideos, err)
 	}
 

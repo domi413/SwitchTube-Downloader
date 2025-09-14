@@ -4,6 +4,7 @@ package download
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -37,6 +38,7 @@ const (
 
 var (
 	errCouldNotDetermineType   = errors.New("could not determine if channel or video")
+	errFailedDecodeResponse    = errors.New("failed to decode response")
 	errFailedToCreateRequest   = errors.New("failed to create request")
 	errFailedToDownloadChannel = errors.New("failed to download channel")
 	errFailedToDownloadVideo   = errors.New("failed to download video")
@@ -84,6 +86,33 @@ func (c *Client) makeRequest(url string) (*http.Response, error) {
 	}
 
 	return resp, nil
+}
+
+// makeRequest makes an authenticated HTTP request and decodes the response.
+func (c *Client) makeJSONRequest(url string, target any) error {
+	resp, err := c.makeRequest(url)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode))
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(target); err != nil {
+		return fmt.Errorf("%w: %w", errFailedDecodeResponse, err)
+	}
+
+	return nil
 }
 
 // Download initiates the download process based on the provided configuration.
