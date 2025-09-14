@@ -32,14 +32,26 @@ var (
 	errUnableToCreate     = errors.New("unable to create access token")
 )
 
+// Manager encapsulates token management logic.
+type Manager struct {
+	keyringService string
+}
+
+// NewTokenManager creates a new instance of tokenManager.
+func NewTokenManager() *Manager {
+	return &Manager{
+		keyringService: serviceName,
+	}
+}
+
 // Get retrieves the access token from the system keyring.
-func Get() (string, error) {
+func (tm *Manager) Get() (string, error) {
 	userName, err := user.Current()
 	if err != nil {
 		return "", fmt.Errorf("%w: %w", errFailedToGetUser, err)
 	}
 
-	token, err := keyring.Get(serviceName, userName.Username)
+	token, err := keyring.Get(tm.keyringService, userName.Username)
 	if err != nil {
 		if errors.Is(err, keyring.ErrNotFound) {
 			return "", errNoTokenFound
@@ -52,8 +64,8 @@ func Get() (string, error) {
 }
 
 // Set creates and stores a new access token in the system keyring.
-func Set() error {
-	existingToken, err := Get()
+func (tm *Manager) Set() error {
+	existingToken, err := tm.Get()
 	if err != nil && !errors.Is(err, errNoTokenFound) {
 		return fmt.Errorf("%w: %w", errFailedToRetrieve, err)
 	}
@@ -68,7 +80,7 @@ func Set() error {
 		}
 	}
 
-	token, err := create()
+	token, err := tm.create()
 	if err != nil {
 		return fmt.Errorf("%w: %w", errUnableToCreate, err)
 	}
@@ -78,7 +90,7 @@ func Set() error {
 		return fmt.Errorf("%w: %w", errFailedToGetUser, err)
 	}
 
-	if err = keyring.Set(serviceName, userName.Username, token); err != nil {
+	if err = keyring.Set(tm.keyringService, userName.Username, token); err != nil {
 		return fmt.Errorf("%w: %w", errFailedToStore, err)
 	}
 
@@ -86,15 +98,15 @@ func Set() error {
 }
 
 // Delete removes the access token from the system keyring.
-func Delete() error {
+func (tm *Manager) Delete() error {
 	userName, err := user.Current()
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedToGetUser, err)
 	}
 
-	if err = keyring.Delete(serviceName, userName.Username); err != nil {
+	if err = keyring.Delete(tm.keyringService, userName.Username); err != nil {
 		if errors.Is(err, keyring.ErrNotFound) {
-			return fmt.Errorf("%w for %s", errNoTokenFoundDelete, serviceName)
+			return fmt.Errorf("%w for %s", errNoTokenFoundDelete, tm.keyringService)
 		}
 
 		return fmt.Errorf("%w: %w", errFailedToDelete, err)
@@ -104,7 +116,7 @@ func Delete() error {
 }
 
 // create prompts the user to visit the access token creation URL and enter a new token.
-func create() (string, error) {
+func (tm *Manager) create() (string, error) {
 	fmt.Printf("Please visit: %s\n", createAccessTokenURL)
 	fmt.Printf("Create a new access token and paste it below\n\n")
 

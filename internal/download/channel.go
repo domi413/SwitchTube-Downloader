@@ -19,21 +19,35 @@ type channelMetadata struct {
 
 var (
 	errFailedDecodeChannelMeta     = errors.New("failed to decode channel metadata")
-	errFailedDecodeChannelVids     = errors.New("failed to decode channel videos")
+	errFailedDecodeChannelVideos   = errors.New("failed to decode channel videos")
 	errFailedGetChannelInfo        = errors.New("failed to get channel information")
 	errFailedGetChannelVideos      = errors.New("failed to get channel videos")
 	errFailedSelectVideos          = errors.New("failed to select videos")
 	errFailedToCreateChannelFolder = errors.New("failed to create channel folder")
 )
 
+// channelDownloader handles the downloading of channels.
+type channelDownloader struct {
+	config models.DownloadConfig
+	client *Client
+}
+
+// newChannelDownloader creates a new instance of channelDownloader.
+func newChannelDownloader(config models.DownloadConfig, client *Client) *channelDownloader {
+	return &channelDownloader{
+		config: config,
+		client: client,
+	}
+}
+
 // downloadChannel downloads selected videos from a channel.
-func downloadChannel(channelID string, token string, config models.DownloadConfig) error {
-	channelInfo, err := getChannelMetadata(channelID, token)
+func (cd *channelDownloader) downloadChannel(channelID string) error {
+	channelInfo, err := cd.getMetadata(channelID)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedGetChannelInfo, err)
 	}
 
-	videos, err := getChannelVideos(channelID, token)
+	videos, err := cd.getVideos(channelID)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedGetChannelVideos, err)
 	}
@@ -46,7 +60,7 @@ func downloadChannel(channelID string, token string, config models.DownloadConfi
 
 	fmt.Printf("Found %d videos in channel\n", len(videos))
 
-	selectedIndices, err := ui.SelectVideos(videos, config.All)
+	selectedIndices, err := ui.SelectVideos(videos, cd.config.All)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedSelectVideos, err)
 	}
@@ -57,115 +71,26 @@ func downloadChannel(channelID string, token string, config models.DownloadConfi
 		return nil
 	}
 
-	folderName, err := dir.CreateChannelFolder(channelInfo.Name, config)
+	folderName, err := dir.CreateChannelFolder(channelInfo.Name, cd.config)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedToCreateChannelFolder, err)
 	}
 
-	config.Output = folderName
-
+	cd.config.Output = folderName
 	fmt.Printf("Downloading to folder: %s\n", folderName)
-	downloadSelectedVideos(videos, selectedIndices, token, config)
+	cd.downloadSelectedVideos(videos, selectedIndices)
 
 	return nil
 }
 
-// downloadSelectedVideos downloads the selected videos and reports results.
-func downloadSelectedVideos(
-	videos []models.Video,
-	selectedIndices []int,
-	token string,
-	config models.DownloadConfig,
-) {
-	var (
-		failed     []string
-		toDownload []int
-	)
-
-	// First pass: Check if files exist and prompt for overwrite
-	for _, videoIndex := range selectedIndices {
-		video := videos[videoIndex]
-
-		variants, err := getVideoVariants(video.ID, token)
-		if err != nil {
-			fmt.Printf("\nFailed to get video variants for %s: %v\n", video.Title, err)
-			failed = append(failed, video.Title)
-
-			continue
-		}
-
-		filename := dir.CreateFilename(video.Title, variants[0].MediaType, video.Episode, config)
-		if !dir.OverwriteVideoIfExists(filename, config) {
-			toDownload = append(toDownload, videoIndex)
-		}
-	}
-
-	// Second pass: Download the videos that were approved
-	for i, videoIndex := range toDownload {
-		video := videos[videoIndex]
-
-		err := downloadVideo(video.ID, token, i+1, len(toDownload), config, false)
-		if err != nil {
-			fmt.Printf("\nFailed: %s - %v\n", video.Title, err)
-			failed = append(failed, video.Title)
-		}
-	}
-
-	fmt.Printf("\nDownload complete! %d/%d videos successful\n",
-		len(toDownload)-len(failed), len(selectedIndices))
-
-	if len(failed) > 0 {
-		fmt.Println("Failed downloads:")
-
-		for _, title := range failed {
-			fmt.Printf("  - %s\n", title)
-		}
-	}
-}
-
-// getChannelVideos retrieves all videos from a channel.
-func getChannelVideos(channelID, token string) ([]models.Video, error) {
-	fullURL, err := url.JoinPath(baseURL, channelAPI, channelID, "videos")
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
-	}
-
-	resp, err := makeRequest(fullURL, token)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
-	}
-
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("Warning: failed to close response body: %v\n", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf(
-			"%w: status %d: %s",
-			errHTTPNotOK,
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-		)
-	}
-
-	var videos []models.Video
-	if err = json.NewDecoder(resp.Body).Decode(&videos); err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedDecodeChannelVids, err)
-	}
-
-	return videos, nil
-}
-
-// getChannelMetadata retrieves channel metadata from the API.
-func getChannelMetadata(channelID, token string) (*channelMetadata, error) {
+// getMetadata retrieves channel metadata from the API.
+func (cd *channelDownloader) getMetadata(channelID string) (*channelMetadata, error) {
 	fullURL, err := url.JoinPath(baseURL, channelAPI, channelID)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
 	}
 
-	resp, err := makeRequest(fullURL, token)
+	resp, err := cd.client.makeRequest(fullURL)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
 	}
@@ -191,4 +116,94 @@ func getChannelMetadata(channelID, token string) (*channelMetadata, error) {
 	}
 
 	return &channelData, nil
+}
+
+// getVideos retrieves all videos from a channel.
+func (cd *channelDownloader) getVideos(channelID string) ([]models.Video, error) {
+	fullURL, err := url.JoinPath(baseURL, channelAPI, channelID, "videos")
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
+	}
+
+	resp, err := cd.client.makeRequest(fullURL)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedFetchVideoStream, err)
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
+	}
+
+	var videos []models.Video
+	if err = json.NewDecoder(resp.Body).Decode(&videos); err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedDecodeChannelVideos, err)
+	}
+
+	return videos, nil
+}
+
+// downloadSelectedVideos downloads the selected videos and reports results.
+func (cd *channelDownloader) downloadSelectedVideos(videos []models.Video, selectedIndices []int) {
+	var (
+		failed     []string
+		toDownload []int
+	)
+
+	for _, videoIndex := range selectedIndices {
+		video := videos[videoIndex]
+		videoDownloader := newVideoDownloader(cd.config, cd.client)
+
+		variants, err := videoDownloader.getVariants(video.ID)
+		if err != nil {
+			fmt.Printf("\nFailed to get video variants for %s: %v\n", video.Title, err)
+			failed = append(failed, video.Title)
+
+			continue
+		}
+
+		if len(variants) == 0 {
+			fmt.Printf("\nNo variants found for %s\n", video.Title)
+			failed = append(failed, video.Title)
+
+			continue
+		}
+
+		filename := dir.CreateFilename(video.Title, variants[0].MediaType, video.Episode, cd.config)
+		if !dir.OverwriteVideoIfExists(filename, cd.config) {
+			toDownload = append(toDownload, videoIndex)
+		}
+	}
+
+	for _, videoIndex := range toDownload {
+		video := videos[videoIndex]
+		videoDownloader := newVideoDownloader(cd.config, cd.client)
+
+		err := videoDownloader.downloadVideo(video.ID, false)
+		if err != nil {
+			fmt.Printf("\nFailed: %s - %v\n", video.Title, err)
+			failed = append(failed, video.Title)
+		}
+	}
+
+	fmt.Printf("\nDownload complete! %d/%d videos successful\n",
+		len(toDownload)-len(failed), len(selectedIndices))
+
+	if len(failed) > 0 {
+		fmt.Println("Failed downloads:")
+
+		for _, title := range failed {
+			fmt.Printf("  - %s\n", title)
+		}
+	}
 }

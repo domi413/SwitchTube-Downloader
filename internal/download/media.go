@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"switchtube-downloader/internal/helper/dir"
 	"switchtube-downloader/internal/models"
@@ -22,6 +23,8 @@ const (
 	videoPrefix         = "videos/"
 	channelPrefix       = "channels/"
 	headerAuthorization = "Authorization"
+
+	defaultTimeout = 30 * time.Second
 )
 
 type mediaType int
@@ -42,26 +45,67 @@ var (
 	errInvalidURL              = errors.New("invalid url")
 )
 
-// Download downloads a video or a channel.
+// Client handles all API interactions.
+type Client struct {
+	tokenManager *token.Manager
+	client       *http.Client
+}
+
+// NewClient creates a new instance of Client.
+func NewClient(tm *token.Manager) *Client {
+	return &Client{
+		tokenManager: tm,
+		client: &http.Client{
+			Timeout:       defaultTimeout,
+			Transport:     http.DefaultTransport,
+			CheckRedirect: nil,
+			Jar:           nil,
+		},
+	}
+}
+
+// makeRequest makes an authenticated HTTP request.
+func (c *Client) makeRequest(url string) (*http.Response, error) {
+	apiToken, err := c.tokenManager.Get()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedToGetToken, err)
+	}
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedToCreateRequest, err)
+	}
+
+	req.Header.Set(headerAuthorization, "Token "+apiToken)
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedToCreateRequest, err)
+	}
+
+	return resp, nil
+}
+
+// Download initiates the download process based on the provided configuration.
 func Download(config models.DownloadConfig) error {
 	id, downloadType, err := extractIDAndType(config.Media)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedToExtractType, err)
 	}
 
-	token, err := token.Get()
-	if err != nil {
-		return fmt.Errorf("%w: %w", errFailedToGetToken, err)
-	}
+	tokenMgr := token.NewTokenManager()
+	client := NewClient(tokenMgr)
 
 	switch downloadType {
 	case videoType:
-		if err = downloadVideo(id, token, 1, 1, config, true); err != nil {
+		downloader := newVideoDownloader(config, client)
+		if err = downloader.downloadVideo(id, true); err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 		}
 	case unknownType:
 		// If the type is unknown, we try to download as a video first.
-		if err = downloadVideo(id, token, 1, 1, config, true); err == nil {
+		downloader := newVideoDownloader(config, client)
+		if err = downloader.downloadVideo(id, true); err == nil {
 			return nil
 		} else if errors.Is(err, dir.ErrCreateFile) {
 			return fmt.Errorf("%w", err)
@@ -69,7 +113,8 @@ func Download(config models.DownloadConfig) error {
 
 		fallthrough
 	case channelType:
-		if err = downloadChannel(id, token, config); err != nil {
+		downloader := newChannelDownloader(config, client)
+		if err = downloader.downloadChannel(id); err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadChannel, err)
 		}
 	default:
@@ -97,21 +142,4 @@ func extractIDAndType(input string) (string, mediaType, error) {
 	default:
 		return prefixAndID, unknownType, errInvalidURL
 	}
-}
-
-// makeRequest makes an authenticated HTTP request.
-func makeRequest(url string, token string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedToCreateRequest, err)
-	}
-
-	req.Header.Set(headerAuthorization, "Token "+token)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedToCreateRequest, err)
-	}
-
-	return resp, nil
 }

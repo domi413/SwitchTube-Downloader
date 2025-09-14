@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -16,7 +17,7 @@ const (
 	etaSmoothingFactor = 30
 )
 
-var errFailedToCopyData = fmt.Errorf("failed to copy data")
+var errFailedToCopyData = errors.New("failed to copy data")
 
 // ProgressBar sets up a progress bar for downloading and copies data from
 // src to dst.
