@@ -96,15 +96,21 @@ func Download(config models.DownloadConfig) error {
 	tokenMgr := token.NewTokenManager()
 	client := NewClient(tokenMgr)
 
+	// Create default progress info for single video downloads
+	progress := models.ProgressInfo{
+		CurrentItem: 1,
+		TotalItems:  1,
+	}
+
 	switch downloadType {
 	case videoType:
-		downloader := newVideoDownloader(config, client)
+		downloader := newVideoDownloader(config, progress, client)
 		if err = downloader.downloadVideo(id, true); err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 		}
 	case unknownType:
 		// If the type is unknown, we try to download as a video first.
-		downloader := newVideoDownloader(config, client)
+		downloader := newVideoDownloader(config, progress, client)
 		if err = downloader.downloadVideo(id, true); err == nil {
 			return nil
 		} else if errors.Is(err, dir.ErrCreateFile) {

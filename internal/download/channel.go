@@ -155,49 +155,82 @@ func (cd *channelDownloader) getVideos(channelID string) ([]models.Video, error)
 
 // downloadSelectedVideos downloads the selected videos and reports results.
 func (cd *channelDownloader) downloadSelectedVideos(videos []models.Video, selectedIndices []int) {
-	var (
-		failed     []string
-		toDownload []int
-	)
+	var failed []string
 
-	for _, videoIndex := range selectedIndices {
-		video := videos[videoIndex]
-		videoDownloader := newVideoDownloader(cd.config, cd.client)
+	toDownload := cd.prepareDownloads(videos, selectedIndices, &failed)
 
-		variants, err := videoDownloader.getVariants(video.ID)
+	if len(toDownload) > 0 {
+		failed = append(failed, cd.processDownloads(videos, toDownload)...)
+	}
+
+	cd.printResults(len(toDownload), len(selectedIndices), failed)
+}
+
+// prepareDownloads checks which videos need to be downloaded and validates their availability.
+func (cd *channelDownloader) prepareDownloads(
+	videos []models.Video,
+	indices []int,
+	failed *[]string,
+) []int {
+	var toDownload []int
+
+	for _, idx := range indices {
+		video := videos[idx]
+		downloader := newVideoDownloader(
+			cd.config,
+			models.ProgressInfo{CurrentItem: 0, TotalItems: 0},
+			cd.client,
+		)
+
+		variants, err := downloader.getVariants(video.ID)
 		if err != nil {
 			fmt.Printf("\nFailed to get video variants for %s: %v\n", video.Title, err)
-			failed = append(failed, video.Title)
+			*failed = append(*failed, video.Title)
 
 			continue
 		}
 
 		if len(variants) == 0 {
 			fmt.Printf("\nNo variants found for %s\n", video.Title)
-			failed = append(failed, video.Title)
+			*failed = append(*failed, video.Title)
 
 			continue
 		}
 
 		filename := dir.CreateFilename(video.Title, variants[0].MediaType, video.Episode, cd.config)
 		if !dir.OverwriteVideoIfExists(filename, cd.config) {
-			toDownload = append(toDownload, videoIndex)
+			toDownload = append(toDownload, idx)
 		}
 	}
 
-	for _, videoIndex := range toDownload {
-		video := videos[videoIndex]
-		videoDownloader := newVideoDownloader(cd.config, cd.client)
+	return toDownload
+}
 
-		err := videoDownloader.downloadVideo(video.ID, false)
-		if err != nil {
+// processDownloads performs the actual video downloads and returns failed video titles.
+func (cd *channelDownloader) processDownloads(videos []models.Video, indices []int) []string {
+	var failed []string
+
+	for i, idx := range indices {
+		video := videos[idx]
+		progress := models.ProgressInfo{
+			CurrentItem: i + 1,
+			TotalItems:  len(indices),
+		}
+
+		downloader := newVideoDownloader(cd.config, progress, cd.client)
+		if err := downloader.downloadVideo(video.ID, false); err != nil {
 			fmt.Printf("\nFailed: %s - %v\n", video.Title, err)
 			failed = append(failed, video.Title)
 		}
 	}
 
+	return failed
+}
+
+// printResults displays the download results summary.
+func (cd *channelDownloader) printResults(downloadCount, selectedCount int, failed []string) {
 	fmt.Printf("\nDownload complete! %d/%d videos successful\n",
-		len(toDownload)-len(failed), len(selectedIndices))
+		downloadCount-len(failed), selectedCount)
 
 	if len(failed) > 0 {
 		fmt.Println("Failed downloads:")

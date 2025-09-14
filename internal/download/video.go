@@ -34,15 +34,21 @@ var (
 
 // videoDownloader handles the downloading of individual videos.
 type videoDownloader struct {
-	config models.DownloadConfig
-	client *Client
+	config   models.DownloadConfig
+	progress models.ProgressInfo
+	client   *Client
 }
 
 // newVideoDownloader creates a new instance of VideoDownloader.
-func newVideoDownloader(config models.DownloadConfig, client *Client) *videoDownloader {
+func newVideoDownloader(
+	config models.DownloadConfig,
+	progress models.ProgressInfo,
+	client *Client,
+) *videoDownloader {
 	return &videoDownloader{
-		config: config,
-		client: client,
+		config:   config,
+		progress: progress,
+		client:   client,
 	}
 }
 
@@ -71,6 +77,7 @@ func (vd *videoDownloader) downloadVideo(videoID string, checkExists bool) error
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedToCreateVideoFile, err)
 	}
+
 	// Download the video
 	err = vd.downloadProcess(variants[0].Path, file)
 	if err != nil {
@@ -177,7 +184,17 @@ func (vd *videoDownloader) downloadProcess(endpoint string, file *os.File) error
 		)
 	}
 
-	err = ui.ProgressBar(resp.Body, file, resp.ContentLength, file.Name(), 1, 1)
+	currentItem := vd.progress.CurrentItem
+	if currentItem == 0 {
+		currentItem = 1
+	}
+
+	totalItems := vd.progress.TotalItems
+	if totalItems == 0 {
+		totalItems = 1
+	}
+
+	err = ui.ProgressBar(resp.Body, file, resp.ContentLength, file.Name(), currentItem, totalItems)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedCopyVideoData, err)
 	}
