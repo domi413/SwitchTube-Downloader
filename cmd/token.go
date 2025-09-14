@@ -36,7 +36,9 @@ var tokenGetCmd = &cobra.Command{
 	Short: "Get the current access token",
 	Long:  "Checks if an access token is currently stored in the system keyring and returns it if there is one",
 	Run: func(_ *cobra.Command, _ []string) {
-		token, err := token.Get()
+		tokenMgr := token.NewTokenManager()
+
+		token, err := tokenMgr.Get()
 		if err != nil {
 			fmt.Printf("Error getting token: %v\n", err)
 
@@ -52,7 +54,9 @@ var tokenSetCmd = &cobra.Command{
 	Short: "Set a new access token",
 	Long:  "Create and store a new SwitchTube access token in the system keyring",
 	Run: func(_ *cobra.Command, _ []string) {
-		if err := token.Set(); errors.Is(err, token.ErrTokenAlreadyExists) {
+		tokenMgr := token.NewTokenManager()
+
+		if err := tokenMgr.Set(); errors.Is(err, token.ErrTokenAlreadyExists) {
 			return
 		} else if err != nil {
 			fmt.Printf("Error setting token: %v\n", err)
@@ -67,9 +71,11 @@ var tokenSetCmd = &cobra.Command{
 var tokenDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete access token from the keyring",
-	Long:  "Delete the SwitchTube access token from the system keyring",
+	Long:  "Delete the SwitchTube access token stored the system keyring",
 	Run: func(_ *cobra.Command, _ []string) {
-		if err := token.Delete(); err != nil {
+		tokenMgr := token.NewTokenManager()
+
+		if err := tokenMgr.Delete(); err != nil {
 			fmt.Printf("Error deleting token: %v\n", err)
 
 			return

@@ -34,6 +34,8 @@ func TestGet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			keyring.MockInit()
 
+			tokenMgr := NewTokenManager()
+
 			if tt.setupToken {
 				currentUser, userErr := user.Current()
 				if userErr != nil {
@@ -43,7 +45,7 @@ func TestGet(t *testing.T) {
 				keyring.Set(serviceName, currentUser.Username, tt.tokenValue)
 			}
 
-			token, err := Get()
+			token, err := tokenMgr.Get()
 
 			if tt.wantErrType != nil {
 				if err == nil || !errors.Is(err, tt.wantErrType) {
@@ -93,6 +95,8 @@ func TestSet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			keyring.MockInit()
 
+			tokenMgr := NewTokenManager()
+
 			if tt.existingToken {
 				currentUser, userErr := user.Current()
 				if userErr != nil {
@@ -127,7 +131,7 @@ func TestSet(t *testing.T) {
 
 			defer func() { os.Stdin = oldStdin }()
 
-			if err = Set(); tt.wantErr && err == nil {
+			if err = tokenMgr.Set(); tt.wantErr && err == nil {
 				t.Error("Set() expected error but got nil")
 			} else if !tt.wantErr && err != nil {
 				t.Errorf("Set() error = %v, want nil", err)
@@ -157,6 +161,8 @@ func TestDelete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			keyring.MockInit()
 
+			tokenMgr := NewTokenManager()
+
 			if tt.setupToken {
 				currentUser, userErr := user.Current()
 				if userErr != nil {
@@ -166,7 +172,7 @@ func TestDelete(t *testing.T) {
 				keyring.Set(serviceName, currentUser.Username, "test-token")
 			}
 
-			if err := Delete(); tt.wantErrType != nil {
+			if err := tokenMgr.Delete(); tt.wantErrType != nil {
 				if err == nil || !errors.Is(err, tt.wantErrType) {
 					t.Errorf("Delete() error = %v, want error type %v", err, tt.wantErrType)
 				}
@@ -209,7 +215,7 @@ func TestCreate(t *testing.T) {
 		},
 		{
 			name:      "token with leading/trailing whitespace",
-			input:     "  token-with-spaces  \n",
+			input:     "  token-with-spaces   \n",
 			wantToken: "token-with-spaces",
 		},
 		{
@@ -226,6 +232,8 @@ func TestCreate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tokenMgr := NewTokenManager()
+
 			tmpFile, err := os.CreateTemp(t.TempDir(), "test-input")
 			if err != nil {
 				t.Fatalf("Failed to create temp file: %v", err)
@@ -243,7 +251,7 @@ func TestCreate(t *testing.T) {
 
 			defer func() { os.Stdin = oldStdin }()
 
-			token, err := create()
+			token, err := tokenMgr.create()
 
 			if token != tt.wantToken {
 				t.Errorf("create() token = %v, want %v", token, tt.wantToken)

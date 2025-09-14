@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -15,6 +16,8 @@ const (
 	refreshRateMs      = 200
 	etaSmoothingFactor = 30
 )
+
+var errFailedToCopyData = errors.New("failed to copy data")
 
 // ProgressBar sets up a progress bar for downloading and copies data from
 // src to dst.
@@ -56,7 +59,7 @@ func ProgressBar(
 	start := time.Now()
 
 	if _, err := io.Copy(dst, proxyReader); err != nil {
-		return fmt.Errorf("failed to copy data: %w", err)
+		return fmt.Errorf("%w: %w", errFailedToCopyData, err)
 	}
 
 	bar.EwmaIncrInt64(total, time.Since(start))

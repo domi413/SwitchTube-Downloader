@@ -4,14 +4,16 @@ package download
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"switchtube-downloader/internal/helper/dir"
 	"switchtube-downloader/internal/models"
-	token "switchtube-downloader/internal/token"
+	"switchtube-downloader/internal/token"
 )
 
 const (
@@ -22,6 +24,8 @@ const (
 	videoPrefix         = "videos/"
 	channelPrefix       = "channels/"
 	headerAuthorization = "Authorization"
+
+	defaultTimeout = 30 * time.Second
 )
 
 type mediaType int
@@ -34,6 +38,8 @@ const (
 
 var (
 	errCouldNotDetermineType   = errors.New("could not determine if channel or video")
+	errFailedDecodeResponse    = errors.New("failed to decode response")
+	errFailedToCreateRequest   = errors.New("failed to create request")
 	errFailedToDownloadChannel = errors.New("failed to download channel")
 	errFailedToDownloadVideo   = errors.New("failed to download video")
 	errFailedToExtractType     = errors.New("failed to extract type")
@@ -41,26 +47,100 @@ var (
 	errInvalidURL              = errors.New("invalid url")
 )
 
-// Download downloads a video or a channel.
+// Client handles all API interactions.
+type Client struct {
+	tokenManager *token.Manager
+	client       *http.Client
+}
+
+// NewClient creates a new instance of Client.
+func NewClient(tm *token.Manager) *Client {
+	return &Client{
+		tokenManager: tm,
+		client: &http.Client{
+			Timeout:       defaultTimeout,
+			Transport:     http.DefaultTransport,
+			CheckRedirect: nil,
+			Jar:           nil,
+		},
+	}
+}
+
+// makeRequest makes an authenticated HTTP request.
+func (c *Client) makeRequest(url string) (*http.Response, error) {
+	apiToken, err := c.tokenManager.Get()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedToGetToken, err)
+	}
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedToCreateRequest, err)
+	}
+
+	req.Header.Set(headerAuthorization, "Token "+apiToken)
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %w", errFailedToCreateRequest, err)
+	}
+
+	return resp, nil
+}
+
+// makeRequest makes an authenticated HTTP request and decodes the response.
+func (c *Client) makeJSONRequest(url string, target any) error {
+	resp, err := c.makeRequest(url)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Warning: failed to close response body: %v\n", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("%w: status %d: %s",
+			errHTTPNotOK,
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode))
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(target); err != nil {
+		return fmt.Errorf("%w: %w", errFailedDecodeResponse, err)
+	}
+
+	return nil
+}
+
+// Download initiates the download process based on the provided configuration.
 func Download(config models.DownloadConfig) error {
 	id, downloadType, err := extractIDAndType(config.Media)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errFailedToExtractType, err)
 	}
 
-	token, err := token.Get()
-	if err != nil {
-		return fmt.Errorf("%w: %w", errFailedToGetToken, err)
+	tokenMgr := token.NewTokenManager()
+	client := NewClient(tokenMgr)
+
+	// Create default progress info for single video downloads
+	progress := models.ProgressInfo{
+		CurrentItem: 1,
+		TotalItems:  1,
 	}
 
 	switch downloadType {
 	case videoType:
-		if err = downloadVideo(id, token, 1, 1, config, true); err != nil {
+		downloader := newVideoDownloader(config, progress, client)
+		if err = downloader.downloadVideo(id, true); err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 		}
 	case unknownType:
 		// If the type is unknown, we try to download as a video first.
-		if err = downloadVideo(id, token, 1, 1, config, true); err == nil {
+		downloader := newVideoDownloader(config, progress, client)
+		if err = downloader.downloadVideo(id, true); err == nil {
 			return nil
 		} else if errors.Is(err, dir.ErrCreateFile) {
 			return fmt.Errorf("%w", err)
@@ -68,7 +148,8 @@ func Download(config models.DownloadConfig) error {
 
 		fallthrough
 	case channelType:
-		if err = downloadChannel(id, token, config); err != nil {
+		downloader := newChannelDownloader(config, client)
+		if err = downloader.downloadChannel(id); err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadChannel, err)
 		}
 	default:
@@ -96,21 +177,4 @@ func extractIDAndType(input string) (string, mediaType, error) {
 	default:
 		return prefixAndID, unknownType, errInvalidURL
 	}
-}
-
-// makeRequest makes an authenticated HTTP request.
-func makeRequest(url string, token string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set(headerAuthorization, "Token "+token)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request: %w", err)
-	}
-
-	return resp, nil
 }
