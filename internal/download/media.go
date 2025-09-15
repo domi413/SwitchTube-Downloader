@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"switchtube-downloader/internal/helper/dir"
 	"switchtube-downloader/internal/models"
@@ -24,8 +23,6 @@ const (
 	videoPrefix         = "videos/"
 	channelPrefix       = "channels/"
 	headerAuthorization = "Authorization"
-
-	defaultTimeout = 30 * time.Second
 )
 
 type mediaType int
@@ -58,7 +55,7 @@ func NewClient(tm *token.Manager) *Client {
 	return &Client{
 		tokenManager: tm,
 		client: &http.Client{
-			Timeout:       defaultTimeout,
+			Timeout:       0,
 			Transport:     http.DefaultTransport,
 			CheckRedirect: nil,
 			Jar:           nil,
