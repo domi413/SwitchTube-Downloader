@@ -15,6 +15,8 @@ to easily download videos from [SwitchTube](https://tube.switch.ch/).
    yay -S switchtube-downloader-bin
    ```
 
+   **NOTE**: The AUR executable is named `swdl` for convenience.
+
 2. **Make executable**: After downloading, ensure the binary is executable. For
    Linux and MacOS, run:
 

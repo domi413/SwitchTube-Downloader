@@ -11,6 +11,7 @@ pkgname
 pkgrel
 pkgver
 Rbound
+swdl
 switchdl
 switchtube
 vbauerster
