@@ -22,10 +22,10 @@ const (
 )
 
 var (
-	// ErrCreateFile is returned when file creation fails.
-	ErrCreateFile = errors.New("failed to create file")
+	// ErrFailedToCreateFile is returned when file creation fails.
+	ErrFailedToCreateFile = errors.New("failed to create file")
 
-	errFailedCreateFolder = errors.New("failed to create folder")
+	errFailedToCreateFolder = errors.New("failed to create folder")
 )
 
 // CreateFilename creates a sanitized filename from video title and media type.
@@ -39,7 +39,7 @@ func CreateFilename(
 	parts := strings.Split(mediaType, "/")
 
 	extension := "mp4" // default fallback
-	if len(parts) >= minMediaTypeParts {
+	if len(parts) == minMediaTypeParts {
 		extension = parts[1]
 	}
 
@@ -78,12 +78,12 @@ func OverwriteVideoIfExists(filename string, config models.DownloadConfig) bool 
 // CreateVideoFile creates a video file on disk with the specified filename.
 func CreateVideoFile(filename string) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(filename), dirPermissions); err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedCreateFolder, err)
+		return nil, fmt.Errorf("%w: %w", errFailedToCreateFolder, err)
 	}
 
 	fd, err := os.Create(filename)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrCreateFile, err)
+		return nil, fmt.Errorf("%w: %w", ErrFailedToCreateFile, err)
 	}
 
 	return fd, nil
@@ -99,7 +99,7 @@ func CreateChannelFolder(channelName string, config models.DownloadConfig) (stri
 	}
 
 	if err := os.MkdirAll(folderName, dirPermissions); err != nil {
-		return "", fmt.Errorf("%w: %w", errFailedCreateFolder, err)
+		return "", fmt.Errorf("%w: %w", errFailedToCreateFolder, err)
 	}
 
 	return folderName, nil

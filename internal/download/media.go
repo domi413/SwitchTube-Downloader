@@ -1,5 +1,4 @@
-// Package download handles the downloading of videos and channels from
-// SwitchTube.
+// Package download handles the downloading of videos and channels from SwitchTube.
 package download
 
 import (
@@ -34,9 +33,8 @@ const (
 )
 
 var (
-	errCouldNotDetermineType   = errors.New("could not determine if channel or video")
-	errFailedDecodeResponse    = errors.New("failed to decode response")
 	errFailedToCreateRequest   = errors.New("failed to create request")
+	errFailedToDecodeResponse  = errors.New("failed to decode response")
 	errFailedToDownloadChannel = errors.New("failed to download channel")
 	errFailedToDownloadVideo   = errors.New("failed to download video")
 	errFailedToExtractType     = errors.New("failed to extract type")
@@ -106,7 +104,7 @@ func (c *Client) makeJSONRequest(url string, target any) error {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(target); err != nil {
-		return fmt.Errorf("%w: %w", errFailedDecodeResponse, err)
+		return fmt.Errorf("%w: %w", errFailedToDecodeResponse, err)
 	}
 
 	return nil
@@ -122,24 +120,23 @@ func Download(config models.DownloadConfig) error {
 	tokenMgr := token.NewTokenManager()
 	client := NewClient(tokenMgr)
 
-	// Create default progress info for single video downloads
-	progress := models.ProgressInfo{
+	videoProgress := models.ProgressInfo{
 		CurrentItem: 1,
 		TotalItems:  1,
 	}
 
 	switch downloadType {
 	case videoType:
-		downloader := newVideoDownloader(config, progress, client)
+		downloader := newVideoDownloader(config, videoProgress, client)
 		if err = downloader.downloadVideo(id, true); err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 		}
 	case unknownType:
 		// If the type is unknown, we try to download as a video first.
-		downloader := newVideoDownloader(config, progress, client)
+		downloader := newVideoDownloader(config, videoProgress, client)
 		if err = downloader.downloadVideo(id, true); err == nil {
 			return nil
-		} else if errors.Is(err, dir.ErrCreateFile) {
+		} else if errors.Is(err, dir.ErrFailedToCreateFile) {
 			return fmt.Errorf("%w", err)
 		}
 
@@ -149,8 +146,6 @@ func Download(config models.DownloadConfig) error {
 		if err = downloader.downloadChannel(id); err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadChannel, err)
 		}
-	default:
-		return errCouldNotDetermineType
 	}
 
 	return nil

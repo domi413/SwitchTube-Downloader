@@ -1,5 +1,4 @@
-// Package cmd implements the command-line interface for the
-// SwitchTube-Downloader application.
+// Package cmd implements the command-line interface for the SwitchTube-Downloader application.
 package cmd
 
 import (
