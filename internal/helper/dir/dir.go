@@ -39,7 +39,7 @@ func CreateFilename(
 	parts := strings.Split(mediaType, "/")
 
 	extension := "mp4" // default fallback
-	if len(parts) >= minMediaTypeParts {
+	if len(parts) == minMediaTypeParts {
 		extension = parts[1]
 	}
 

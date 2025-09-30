@@ -57,7 +57,7 @@ func SelectVideos(videos []models.Video, all bool) ([]int, error) {
 }
 
 // parseSelection parses user input and returns selected video indices.
-func parseSelection(input string, maxVideos int) ([]int, error) {
+func parseSelection(input string, availableVideos int) ([]int, error) {
 	var indices []int
 
 	seen := make(map[int]bool)
@@ -76,12 +76,12 @@ func parseSelection(input string, maxVideos int) ([]int, error) {
 		var err error
 		// Handle range (e.g., "1-5")
 		if strings.Contains(part, "-") {
-			indices, err = handleRangeSelection(part, maxVideos, indices, seen)
+			indices, err = handleRangeSelection(part, availableVideos, indices, seen)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			indices, err = handleSingleSelection(part, maxVideos, indices, seen)
+			indices, err = handleSingleSelection(part, availableVideos, indices, seen)
 			if err != nil {
 				return nil, err
 			}
@@ -100,7 +100,7 @@ func parseSelection(input string, maxVideos int) ([]int, error) {
 // handleRangeSelection processes a range selection like "1-5".
 func handleRangeSelection(
 	part string,
-	maxVideos int,
+	availableVideos int,
 	indices []int,
 	seen map[int]bool,
 ) ([]int, error) {
@@ -119,8 +119,8 @@ func handleRangeSelection(
 		return nil, fmt.Errorf("%w: %s", errInvalidEndNumber, rangeParts[1])
 	}
 
-	if start < 1 || end > maxVideos || start > end {
-		return nil, fmt.Errorf("%w: %d-%d (must be 1-%d)", errInvalidRange, start, end, maxVideos)
+	if start < 1 || end > availableVideos || start > end {
+		return nil, fmt.Errorf("%w: %d-%d (must be 1-%d)", errInvalidRange, start, end, availableVideos)
 	}
 
 	for i := start; i <= end; i++ {
@@ -137,7 +137,7 @@ func handleRangeSelection(
 // handleSingleSelection processes a single number selection.
 func handleSingleSelection(
 	part string,
-	maxVideos int,
+	availableVideos int,
 	indices []int,
 	seen map[int]bool,
 ) ([]int, error) {
@@ -146,8 +146,8 @@ func handleSingleSelection(
 		return nil, fmt.Errorf("%w: %s", errInvalidNumber, part)
 	}
 
-	if num < 1 || num > maxVideos {
-		return nil, fmt.Errorf("%w: %d (must be 1-%d)", errNumberOutOfRange, num, maxVideos)
+	if num < 1 || num > availableVideos {
+		return nil, fmt.Errorf("%w: %d (must be 1-%d)", errNumberOutOfRange, num, availableVideos)
 	}
 
 	index := num - 1
