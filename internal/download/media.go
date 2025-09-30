@@ -1,5 +1,4 @@
-// Package download handles the downloading of videos and channels from
-// SwitchTube.
+// Package download handles the downloading of videos and channels from SwitchTube.
 package download
 
 import (
@@ -34,8 +33,8 @@ const (
 )
 
 var (
-	errFailedDecodeResponse    = errors.New("failed to decode response")
 	errFailedToCreateRequest   = errors.New("failed to create request")
+	errFailedToDecodeResponse  = errors.New("failed to decode response")
 	errFailedToDownloadChannel = errors.New("failed to download channel")
 	errFailedToDownloadVideo   = errors.New("failed to download video")
 	errFailedToExtractType     = errors.New("failed to extract type")
@@ -105,7 +104,7 @@ func (c *Client) makeJSONRequest(url string, target any) error {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(target); err != nil {
-		return fmt.Errorf("%w: %w", errFailedDecodeResponse, err)
+		return fmt.Errorf("%w: %w", errFailedToDecodeResponse, err)
 	}
 
 	return nil
@@ -137,7 +136,7 @@ func Download(config models.DownloadConfig) error {
 		downloader := newVideoDownloader(config, videoProgress, client)
 		if err = downloader.downloadVideo(id, true); err == nil {
 			return nil
-		} else if errors.Is(err, dir.ErrCreateFile) {
+		} else if errors.Is(err, dir.ErrFailedToCreateFile) {
 			return fmt.Errorf("%w", err)
 		}
 

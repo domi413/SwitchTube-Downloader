@@ -1,5 +1,4 @@
-// Package token provides functionality for managing access tokens to
-// authenticate with SwitchTube.
+// Package token provides functionality for managing access tokens to authenticate with SwitchTube.
 package token
 
 import (
@@ -115,7 +114,7 @@ func (tm *Manager) Delete() error {
 	return nil
 }
 
-// create prompts the user to visit the access token creation URL and enter a new token.
+// create prompts the user to visit the access-token-creation URL and enter a new token.
 func (tm *Manager) create() (string, error) {
 	fmt.Printf("Please visit: %s\n", createAccessTokenURL)
 	fmt.Printf("Create a new access token and paste it below\n\n")

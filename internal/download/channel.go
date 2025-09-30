@@ -16,12 +16,12 @@ type channelMetadata struct {
 }
 
 var (
-	errFailedDecodeChannelMeta     = errors.New("failed to decode channel metadata")
-	errFailedDecodeChannelVideos   = errors.New("failed to decode channel videos")
-	errFailedGetChannelInfo        = errors.New("failed to get channel information")
-	errFailedGetChannelVideos      = errors.New("failed to get channel videos")
-	errFailedSelectVideos          = errors.New("failed to select videos")
 	errFailedToCreateChannelFolder = errors.New("failed to create channel folder")
+	errFailedToDecodeChannelMeta   = errors.New("failed to decode channel metadata")
+	errFailedToDecodeChannelVideos = errors.New("failed to decode channel videos")
+	errFailedToGetChannelInfo      = errors.New("failed to get channel information")
+	errFailedToGetChannelVideos    = errors.New("failed to get channel videos")
+	errFailedToSelectVideos        = errors.New("failed to select videos")
 )
 
 // channelDownloader handles the downloading of channels.
@@ -42,12 +42,12 @@ func newChannelDownloader(config models.DownloadConfig, client *Client) *channel
 func (cd *channelDownloader) downloadChannel(channelID string) error {
 	channelInfo, err := cd.getMetadata(channelID)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errFailedGetChannelInfo, err)
+		return fmt.Errorf("%w: %w", errFailedToGetChannelInfo, err)
 	}
 
 	videos, err := cd.getVideos(channelID)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errFailedGetChannelVideos, err)
+		return fmt.Errorf("%w: %w", errFailedToGetChannelVideos, err)
 	}
 
 	if len(videos) == 0 {
@@ -56,11 +56,11 @@ func (cd *channelDownloader) downloadChannel(channelID string) error {
 		return nil
 	}
 
-	fmt.Printf("Found %d videos in channel\n", len(videos))
+	fmt.Printf("Found %d videos in channel: %s\n", len(videos), channelInfo.Name)
 
 	selectedIndices, err := ui.SelectVideos(videos, cd.config.All)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errFailedSelectVideos, err)
+		return fmt.Errorf("%w: %w", errFailedToSelectVideos, err)
 	}
 
 	if len(selectedIndices) == 0 {
@@ -85,12 +85,12 @@ func (cd *channelDownloader) downloadChannel(channelID string) error {
 func (cd *channelDownloader) getMetadata(channelID string) (*channelMetadata, error) {
 	fullURL, err := url.JoinPath(baseURL, channelAPI, channelID)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
+		return nil, fmt.Errorf("%w: %w", errFailedToConstructURL, err)
 	}
 
 	var data channelMetadata
 	if err := cd.client.makeJSONRequest(fullURL, &data); err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedDecodeChannelMeta, err)
+		return nil, fmt.Errorf("%w: %w", errFailedToDecodeChannelMeta, err)
 	}
 
 	return &data, nil
@@ -100,12 +100,12 @@ func (cd *channelDownloader) getMetadata(channelID string) (*channelMetadata, er
 func (cd *channelDownloader) getVideos(channelID string) ([]models.Video, error) {
 	fullURL, err := url.JoinPath(baseURL, channelAPI, channelID, "videos")
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedConstructURL, err)
+		return nil, fmt.Errorf("%w: %w", errFailedToConstructURL, err)
 	}
 
 	var videos []models.Video
 	if err := cd.client.makeJSONRequest(fullURL, &videos); err != nil {
-		return nil, fmt.Errorf("%w: %w", errFailedDecodeChannelVideos, err)
+		return nil, fmt.Errorf("%w: %w", errFailedToDecodeChannelVideos, err)
 	}
 
 	return videos, nil
@@ -116,7 +116,6 @@ func (cd *channelDownloader) downloadSelectedVideos(videos []models.Video, selec
 	var failed []string
 
 	toDownload := cd.prepareDownloads(videos, selectedIndices, &failed)
-
 	if len(toDownload) > 0 {
 		failed = append(failed, cd.processDownloads(videos, toDownload)...)
 	}
