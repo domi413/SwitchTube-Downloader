@@ -7,7 +7,8 @@ linters:
     - forbidigo
     - gochecknoglobals
     - gochecknoinits
-    - noinlineerr # not available in workflow? (v2.2.0)
+    - noinlineerr
+    - varnamelen
     - wsl
 
   exclusions:
@@ -35,9 +36,6 @@ linters:
       excludes:
         - G101
         - G304
-
-    varnamelen:
-      min-name-length: 1
 
 formatters:
   enable:
