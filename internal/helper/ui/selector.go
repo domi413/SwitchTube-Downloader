@@ -120,7 +120,13 @@ func handleRangeSelection(
 	}
 
 	if start < 1 || end > availableVideos || start > end {
-		return nil, fmt.Errorf("%w: %d-%d (must be 1-%d)", errInvalidRange, start, end, availableVideos)
+		return nil, fmt.Errorf(
+			"%w: %d-%d (must be 1-%d)",
+			errInvalidRange,
+			start,
+			end,
+			availableVideos,
+		)
 	}
 
 	for i := start; i <= end; i++ {

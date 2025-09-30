@@ -34,7 +34,6 @@ const (
 )
 
 var (
-	errCouldNotDetermineType   = errors.New("could not determine if channel or video")
 	errFailedDecodeResponse    = errors.New("failed to decode response")
 	errFailedToCreateRequest   = errors.New("failed to create request")
 	errFailedToDownloadChannel = errors.New("failed to download channel")
@@ -122,21 +121,20 @@ func Download(config models.DownloadConfig) error {
 	tokenMgr := token.NewTokenManager()
 	client := NewClient(tokenMgr)
 
-	// Create default progress info for single video downloads
-	progress := models.ProgressInfo{
+	videoProgress := models.ProgressInfo{
 		CurrentItem: 1,
 		TotalItems:  1,
 	}
 
 	switch downloadType {
 	case videoType:
-		downloader := newVideoDownloader(config, progress, client)
+		downloader := newVideoDownloader(config, videoProgress, client)
 		if err = downloader.downloadVideo(id, true); err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadVideo, err)
 		}
 	case unknownType:
 		// If the type is unknown, we try to download as a video first.
-		downloader := newVideoDownloader(config, progress, client)
+		downloader := newVideoDownloader(config, videoProgress, client)
 		if err = downloader.downloadVideo(id, true); err == nil {
 			return nil
 		} else if errors.Is(err, dir.ErrCreateFile) {
@@ -149,8 +147,6 @@ func Download(config models.DownloadConfig) error {
 		if err = downloader.downloadChannel(id); err != nil {
 			return fmt.Errorf("%w: %w", errFailedToDownloadChannel, err)
 		}
-	default:
-		return errCouldNotDetermineType
 	}
 
 	return nil
