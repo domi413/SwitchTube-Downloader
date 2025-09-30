@@ -72,7 +72,7 @@ aurs:
 
     package: |-
       # Install the binary, license, and documentation
-      install -Dm755 "switchtube-downloader" -t "$pkgdir/usr/bin"
+      install -Dm755 "switchtube-downloader" "$pkgdir/usr/bin/swdl"
       install -Dm644 "LICENSE" -t "$pkgdir/usr/share/licenses/$pkgname"
       install -Dm644 "README.md" -t "$pkgdir/usr/share/doc/$pkgname"
 
