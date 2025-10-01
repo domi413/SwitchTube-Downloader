@@ -3,12 +3,13 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "SwitchTube-Downloader",
+	Use:   filepath.Base(os.Args[0]),
 	Short: "A CLI downloader for SwitchTube videos",
 
 	CompletionOptions: cobra.CompletionOptions{
